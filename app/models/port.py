@@ -6,6 +6,7 @@ class Port(db.Model):
     port = db.Column(db.Integer, nullable=False)
     service = db.Column(db.String)
     vulnerabilities = db.Column(db.String)
+    last_found = db.Column(db.Date)
 
     host_id = db.Column(db.Integer, db.ForeignKey("hosts.id"), nullable=False)
     host = db.relationship('Host', back_populates='ports')
