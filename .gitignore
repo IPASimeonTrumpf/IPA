@@ -1,2 +1,9 @@
 # Ignore the database for commits
 instance/*
+
+# Ignore python Cache files
+*.py[cod]
+*.py.class
+*.vscode
+*.pyc
+__pycache__/
