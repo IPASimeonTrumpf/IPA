@@ -7,6 +7,7 @@ from .extensions import db
 
 # Updating the Mapping table
 from .services.mapping_service import update_mapping_table
+from .services.scanner_service import port_scan_host
 
 # Testing DB creation
 from .repositories.host_repository import create_host
@@ -25,6 +26,11 @@ def create_app():
         db.create_all()
         
         update_mapping_table()
+        prep:list[int] = []
+        for i in range(10000):
+            prep.append(i)
+
+        port_scan_host('127.0.0.1', prep)
         
     return app
     

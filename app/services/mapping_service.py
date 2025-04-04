@@ -12,7 +12,7 @@ mappings: list[dict] = []
 
 def update_mapping_table():
     # fetching new data
-    response = requests.get(IANA_PORT_TABLE_URL)
+    response = requests.get(IANA_PORT_TABLE_URL, verify=False)
     csv: str = response.content.decode()
     if(len(csv) < 10000): # Check for correct size
         log('The CSV table was not downloaded correctly', '!')

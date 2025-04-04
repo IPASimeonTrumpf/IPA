@@ -6,4 +6,7 @@ instance/*
 *.py.class
 *.vscode
 *.pyc
-__pycache__/
+*__pycache__/
+*/__pycache__/
+__pychache__
+/app/__pycache__/*
