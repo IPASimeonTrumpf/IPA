@@ -18,7 +18,7 @@ def validate(text: str):
     application against most injection based attacks
     '''
     output: str = text # make a local instance for changes
-    for character in ('"<>/|\\&(){}[];:' + "'"):
+    for character in ('"<>|\\&(){}[];:' + "'"):
         if character in output:
             output.replace(character, '\\' + character) # escape characters
     return output

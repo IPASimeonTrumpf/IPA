@@ -5,7 +5,6 @@ from .scanner_service import scan_host, scan_hosts
 from ..utils import log
 from ..repositories.host_repository import create_host, get_host_by_id
 from ..repositories.network_repository import create_network
-from ..repositories.port__repository import create_port
 from ..models.host import Host # in order to assign variables
 
 
@@ -34,4 +33,14 @@ def scan_host_by_id(id, option):
             ports += 1
             log(f'port {port_object.port} has been added to host: {target_host.ip}', 
                 '+')
-    return f'Scan finished, found {ports} open ports'
+    return f'Scan finished, scanned {ports} open ports'
+
+def get_ports_by_host_id(id):
+    ''' Convert port objects to dicts for ease of use in jinja2'''
+    port_dicts: list[dict] = []
+    host:Host = get_host_by_id(id)
+    for port in host.ports:
+        port_dicts.append({'port_number':port.port, 'service': port.service, 
+                           'vulnerabilities':port.vulnerabilities, 
+                           'scan_date':port.last_found})
+    return port_dicts

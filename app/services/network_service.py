@@ -28,6 +28,7 @@ def get_network_data(ip_and_subnet):
 def add_network(ip_with_cidr:str):
     ''' Adds a network, will be called from the index when adding a network
     '''
+    # Try-Except incase invalid data
     try:
         possible_hosts, subnet_mask = get_network_data(ip_with_cidr)
     except:
@@ -53,19 +54,28 @@ def scan_network(id, option):
     network_to_scan:Network = get_network_by_id(id)
     results = scan_hosts(hosts=network_to_scan.hosts, option=option)
     
-    # perhaps add some formatting here later
-    
-    return results
+    # format it to give a simple overview
+    if option == 'ping':
+        return f'There are {len(results)} hosts online'
+    else:
+        hosts:list[int] = []
+        ports:int = 0
+        for result in results:
+            if result.host_id not in hosts:
+                hosts.append(result.host_id)
+            ports += 1
+            
+        return f'found {ports} ports on {len(hosts)} hosts'
 
-def get_all_networks():
+def get_all_networks_formatted():
     ''' Returns all Networks in the form of dicts, instead of hosts returns
     the length, in order to distinguish between a single host and networks of
     mutliple hosts
     '''
     networks:list[Network] = get_all_networks()
     # convert the network objects to dicts for ease of use in jinja2
-    dicts:list[dict] = []
+    network_dicts:list[dict] = []
     for network in networks:
-        dicts.append({'id': network.id, 'ip':network.ip, 
+        network_dicts.append({'id': network.id, 'ip':network.ip, 
                       'subnet':network.subnet, 'size': len(network.hosts)})
-    return dicts
+    return network_dicts
