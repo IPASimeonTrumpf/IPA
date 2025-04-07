@@ -56,12 +56,14 @@ def serve_network(id):
     try:
         network_id = int(id_as_string)
     except ValueError:
-        return 'Id was not a Integer, please submit a valid id'
+        return 'Invalid id', 400
     network = get_network_by_id(network_id)
+    if not network:
+        return 'Network not found', 404
     return render_template('network.html', network=network)
 
 
-@network_blueprint.route('/scan_network')
+@network_blueprint.route('/scan_network', methods=['POST'])
 def serve_scan_network():
     input_network_id = request.json['network_id']
     input_option = request.json['option']
