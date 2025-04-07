@@ -1,10 +1,12 @@
 import ipaddress
+from threading import Thread
 
 from .scanner_service import scan_host, scan_hosts
 
 from ..utils import log
 from ..repositories.network_repository import create_network, get_network_by_id, get_all_networks
 from ..repositories.host_repository import create_host
+from ..services.scanner_service import check_host_available
 from ..models.network import Network
 
 
@@ -14,14 +16,14 @@ def get_network_data(ip_and_subnet):
     network = ipaddress.ip_network(ip_and_subnet, strict=False)
 
     # Subnet address
-    subnet_address = str(network.network_address)
+    netmask = str(network.netmask)
 
     # All usable IP addresses in the network (excluding network and broadcast addresses)
     usable_ips = [str(ip) for ip in network.hosts()]
 
     # If you want *all* IPs (including network and broadcast), use:
     all_ips = [str(ip) for ip in network]
-    return usable_ips, subnet_address
+    return usable_ips, netmask
 
 
 
@@ -35,16 +37,22 @@ def add_network(ip_with_cidr:str):
         return 'some error has prevented calculating the hosts / subnet'
     
     display_ip:str = ip_with_cidr.split('/')[0]
-    network_id:int = create_network(ip=display_ip, subnet_mask=subnet_mask).id
+    network_id:int = create_network(ip_address=display_ip, subnet_mask=subnet_mask).id
     log(f'Added Network: {display_ip}')
     
+    threads:list[Thread] = []
+    found_hosts:list[str] = []
     for possible_host in possible_hosts:
-        # Single scan needed since not all hosts will reply
-        host_online = scan_host(possible_host, 'ping') 
-        if host_online:
-            log(f'Added host: {possible_host} to network: {display_ip}', '+')
-            create_host(ip=possible_host, network_id=network_id)
+        
+        resp:bool = False
+        thread = Thread(target=check_host_available, args=[possible_host,found_hosts])
+        threads.append(thread)
+    for thread in threads:
+        thread.start()
             
+    for host in found_hosts:
+        log(f'Added host: {possible_host} to network: {display_ip}', '+')
+        create_host(ip_address=possible_host, network_id=network_id)
     return 'network has been created'
 
 def scan_network(id, option):
@@ -61,7 +69,7 @@ def scan_network(id, option):
         hosts:list[int] = []
         ports:int = 0
         for result in results:
-            if result.host_id not in hosts:
+            if result['host'].host_id not in hosts:
                 hosts.append(result.host_id)
             ports += 1
             

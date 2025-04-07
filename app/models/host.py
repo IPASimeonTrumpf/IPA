@@ -2,7 +2,7 @@ from ..extensions import db
 
 class Host(db.Model):
     __tablename__ = 'hosts'
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, nullable=False, index=True)
     ip = db.Column(db.String, nullable=False)
 
     network_id = db.Column(db.Integer, db.ForeignKey("networks.id"), 

@@ -6,4 +6,4 @@ IANA_PORT_TABLE_URL = "https://www.iana.org/assignments/service-names-port-numbe
 VERBOSE = False
 NUMBER_OF_THREADS = 40 # number of threads, the higher the faster
 SEARCHSPLOIT_PATH = '/opt/exploitdb/searchsploit' # path to searchsploit or similar function
-
+NO_PAPER = True # Whether or not to include Papers written about exploits

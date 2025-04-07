@@ -2,7 +2,7 @@ import os
 import socket
 from threading import Thread
 
-from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH
+from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH, NO_PAPER
 from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
 from ..repositories.port__repository import create_port
@@ -12,21 +12,25 @@ payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode()]
 found_ports:list[int] = []
 results_of_the_scans:list = []
 
-def check_host_available(host):
+def check_host_available(host:str, found_host=None):
     ''' Makes a simple Ping on the Host to check the availability
     returns True if online and False if no response / the host not 
     found
     This variable won't be sanitized since it should already be
+    there is a timeout of 2 seconds in the ping
     '''
-    output = os.popen(f'ping -c 1 {host}').read()
+    output = os.popen(f'ping -c 1 -W 2 {host}').read()
     if 'name or service not known' in output:
         return False
     if '64 bytes from ' in output:
+        if found_host:
+            found_host.append(host)
         return True
     if output == '':
         return False
+    
 
-def scan_port(host, port):
+def scan_port(host, port, found_ports):
     ''' Scan a specific TCP-Port on a Host, if the port is found
     it will be:
     - added to the list of found ports (found_ports)
@@ -34,7 +38,7 @@ def scan_port(host, port):
     the socket has a timeout of 1 second, to make sure that the 
     scan duration can be limited / calculated
     '''
-    global found_ports
+    
     socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Ipv4
     socket_instance.settimeout(1)
     try:
@@ -45,13 +49,13 @@ def scan_port(host, port):
     except (ConnectionRefusedError, ConnectionError, TimeoutError):
         socket_instance.close()
 
-def worker(host, part_of_port_list):
+def worker(host, part_of_port_list, found_ports):
     ''' Simply the target for the Thread in port_scan_host
     in order to scan ports, will take a host and a list of ports
     and scan each port in the list on the host.
     '''
     while len(part_of_port_list) > 0:
-        scan_port(host, part_of_port_list.pop())
+        scan_port(host, part_of_port_list.pop(), found_ports)
         
 def bannergrabbing(host, port):
     ''' Tries to find out the service by sending payloads.
@@ -96,8 +100,10 @@ def scan_for_vulnerabilities(service):
     by using the service. For this task the formatting of the service
     is required.
     '''
-    command = f'{SEARCHSPLOIT_PATH} + {service}'
+    command = f'{SEARCHSPLOIT_PATH} {service}'
     output = os.popen(command).read()
+    if NO_PAPER:
+        output.split('Papers')[0]
     return output
             
         
@@ -112,19 +118,18 @@ def port_scan_host(host, port_list):
     As a security measure, all Data that comes from external sources
     (the output from searchsploit and the response from a tcp service)
     '''
-    global found_ports
     found_ports = []
     threads: list[Thread] = []
     results: list[dict] = []
     num_threads = NUMBER_OF_THREADS
     # Assign each thread a fraction of the ports to scan
     if(len(port_list) < num_threads):
-        num_threads = port_list
+        num_threads = len(port_list)
     task_size = len(port_list) / num_threads
     log(f'starting scan {get_timestamp()}', '!')
     for i in range(num_threads):
         ports_for_thread = port_list[int(i*task_size):int((i+1)*task_size)]
-        new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,])
+        new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,found_ports,])
         new_thread.start()
         threads.append(new_thread)
     for thread in threads:
@@ -179,23 +184,23 @@ def scan_host(host, option):
     '''
     if option == 'ping':
         # simply ping the host
-        if check_host_available(host):
-            return f'{host} is online'
-    
+        os.popen('echo "test" >> /tmp/test.txt')
+        if check_host_available(host.ip):
+            return f'{host.ip} is online'
+        else:
+            return f'{host.ip} is not online'
     if option == '1000':
         ports: list[int] = []
         for i in range(1001):
             ports.append(i) # convert range to array
-        
-        
-        results_of_the_scans.append(port_scan_host(host,ports))
+        return port_scan_host(host,ports)
     
     if option == 'all':
         ports: list[int] = []
         for i in range(65536):
             ports.append(i) # convert range to array
         
-        results_of_the_scans(port_scan_host(host,ports))
+        return port_scan_host(host,ports)
     else:
         # specific ports comma separated
         ports_as_strings:list[str] = option.split(',')
@@ -205,8 +210,8 @@ def scan_host(host, option):
                 ports.append(int(port_as_string))
             except ValueError:
                 return 'There were invalid values in the specific ports'
-        results_of_the_scans.append(port_scan_host(host, ports))
-
+        return port_scan_host(host,ports)
+            
 
 def scan_hosts(hosts, option):
     ''' Just a overlay for multiple hosts, so that no more logic needs

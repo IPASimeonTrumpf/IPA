@@ -30,7 +30,7 @@ def serve_scan_host():
         host_id = int(input_host_id)
     except ValueError:
         return 'Invalid id', 400
-    host = get_host_by_id(id)
+    host = get_host_by_id(host_id)
     if not host:
         return 'Host not found', 404
     result = scan_host(host=host, option=option)

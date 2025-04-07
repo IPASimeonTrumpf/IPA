@@ -1,6 +1,6 @@
 import ipaddress
 
-from .scanner_service import scan_host, scan_hosts
+from .scanner_service import scan_host
 
 from ..utils import log
 from ..repositories.host_repository import create_host, get_host_by_id
@@ -20,18 +20,19 @@ def add_host(ip_address):
 
 def scan_host_by_id(id, option):
     '''will scan the specified host according to the specific option
+    returns a message
     '''
     
     ports:int = 0
     target_host:Host = get_host_by_id(id)
     
-    response = scan_host(ip=target_host.ip, option=option)
+    response = scan_host(host=target_host, option=option)
     if option == 'ping':
         return response # simply return the response
     else:
         for port_object in response:
             ports += 1
-            log(f'port {port_object.port} has been added to host: {target_host.ip}', 
+            log(f'port {port_object["port"]} has been added to host: {target_host.ip}', 
                 '+')
     return f'Scan finished, scanned {ports} open ports'
 
