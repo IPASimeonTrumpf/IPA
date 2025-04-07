@@ -1,18 +1,39 @@
-import ipaddress
 import os
 import socket
 from threading import Thread
 
 from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH
-from ..utils import get_timestamp, log
+from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
 
 
 payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode()]
 
 found_ports:list[int] = []
+results_of_the_scans:list = []
+
+def check_host_available(host):
+    ''' Makes a simple Ping on the Host to check the availability
+    returns True if online and False if no response / the host not 
+    found
+    This variable won't be sanitized since it should already be
+    '''
+    output = os.popen(f'ping -c 1 {host}').read()
+    if 'name or service not known' in output:
+        return False
+    if '64 bytes from ' in output:
+        return True
+    if output == '':
+        return False
 
 def scan_port(host, port):
+    ''' Scan a specific TCP-Port on a Host, if the port is found
+    it will be:
+    - added to the list of found ports (found_ports)
+    - logged
+    the socket has a timeout of 1 second, to make sure that the 
+    scan duration can be limited / calculated
+    '''
     global found_ports
     socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Ipv4
     socket_instance.settimeout(1)
@@ -25,10 +46,18 @@ def scan_port(host, port):
         socket_instance.close()
 
 def worker(host, part_of_port_list):
+    ''' Simply the target for the Thread in port_scan_host
+    in order to scan ports, will take a host and a list of ports
+    and scan each port in the list on the host.
+    '''
     while len(part_of_port_list) > 0:
         scan_port(host, part_of_port_list.pop())
         
 def bannergrabbing(host, port):
+    ''' Tries to find out the service by sending payloads.
+    The payloads used are the global payloads, perhaps this list
+    will be exported into the database in a later release.
+    '''
     global payloads
     for payload in payloads:
         socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,7 +71,6 @@ def bannergrabbing(host, port):
             else:
                 socket_instance.close()
                 try:
-                    
                     return response.decode(), True
                 except ValueError:
                     banner = 'The Service responded binary: ' + str(response)
@@ -54,8 +82,9 @@ def bannergrabbing(host, port):
     return '', False
 
 def format_banner(banner, port):
-    """ Used to format the Banner send, can be appended for each port
-    """
+    '''Used to format the Banner send, can be appended for each port
+    will perhaps be appended to the database too in a later realease
+    '''
     if port == 80 or port == 443:
         return banner.split('Host: ')[1].split('\r\n\r')[0]
     if port == 22:
@@ -63,16 +92,24 @@ def format_banner(banner, port):
     return banner
 
 def scan_for_vulnerabilities(service):
-    command = f'{SEARCHSPLOIT_PATH} + {service}'
+    ''' utilises Searchsploit in order to try to find vulnerabilities
+    by using the service. For this task the formatting of the service
+    is required.
+    '''
+    validated_service = validate(service) # validate before executing
+    command = f'{SEARCHSPLOIT_PATH} + {validated_service}'
     output = os.popen(command).read()
     return output
             
         
 def port_scan_host(host, port_list):
-    """ Will first try a connection to each port in the list
+    ''' This is the "main"-function of this application
+    It will first try a connection to each port in the list
     afterwards, for each found port will try to grab the banner.
-    if failed or binary response will display the default service too
-    """
+    if the bannergrabbing failed or if there was a binary response 
+    it will display the default service according to IANA 
+    instead / too.
+    '''
     global found_ports
     found_ports = []
     threads: list[Thread] = []
@@ -113,3 +150,69 @@ def port_scan_host(host, port_list):
     log(f'ended scan {get_timestamp()}', '!')
     return results
     
+def ping_scan(list_of_hosts: list[str]):
+    ''' This function will simply ping each host in the
+    list and return each host that responded.
+    '''
+    active_hosts: list[str] = []
+    for host in list_of_hosts:
+        if check_host_available(host):
+            active_hosts.append(host)
+    
+    return active_hosts
+
+
+def scan_host(host, option):
+    global results_of_the_scans
+    ''' just a simpler way of calling the correct function;
+    its a mapping from option to the specific scan.
+    '''
+    if option == 'ping':
+        # simply ping the host
+        if check_host_available(host):
+            return f'{host} is online'
+    
+    if option == '1000':
+        ports: list[int] = []
+        for i in range(1001):
+            ports.append(i) # convert range to array
+        
+        
+        results_of_the_scans.append(port_scan_host(host,ports))
+    
+    if option == 'all':
+        ports: list[int] = []
+        for i in range(65536):
+            ports.append(i) # convert range to array
+        
+        results_of_the_scans(port_scan_host(host,ports))
+    else:
+        # specific ports comma separated
+        ports_as_strings:list[str] = option.split(',')
+        ports: list[int] = []
+        for port_as_string in ports_as_strings:
+            try:
+                ports.append(int(port_as_string))
+            except ValueError:
+                return 'There were invalid values in the specific ports'
+        results_of_the_scans.append(port_scan_host(host, ports))
+
+
+def scan_hosts(hosts, option):
+    ''' Just a overlay for multiple hosts, so that no more logic needs
+    to happen in the other business logic
+    '''
+    global results_of_the_scans
+    
+    outputs:list = []
+    threads:list[Thread] = []
+    for host in hosts:
+        thread = Thread(target=scan_host, args=(host, option,))
+        threads.append(thread)
+        thread.start() # start one thread for each host
+        
+    for thread in threads:
+        thread.join() 
+    
+    # when all threads are finished return all results
+    return results_of_the_scans

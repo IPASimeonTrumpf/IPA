@@ -12,3 +12,13 @@ def log(msg:str, status:str ='i'):
         return
     print(f'[{status}] {get_timestamp()} {msg}')
 
+
+def validate(text: str):
+    ''' Escapes a list of bad characters in order to secure the 
+    application against most injection based attacks
+    '''
+    output: str = text # make a local instance for changes
+    for character in ('"<>/|\\&(){}[];:' + "'"):
+        if character in output:
+            output.replace(character, '\\' + character) # escape characters
+    return output
