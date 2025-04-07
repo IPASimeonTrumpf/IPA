@@ -27,7 +27,7 @@ def create_app():
         
         update_mapping_table()
         prep:list[int] = []
-        for i in range(10000):
+        for i in range(1000):
             prep.append(i)
 
         port_scan_host('127.0.0.1', prep)

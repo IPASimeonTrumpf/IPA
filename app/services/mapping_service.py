@@ -1,6 +1,6 @@
 import requests
 
-from ..utils import log
+from ..utils import log, validate
 from ..configs import IANA_PORT_TABLE_URL
 from ..repositories.mapping_repository import (bulk_create_mapping, 
                                                wipe_mapping_table)
@@ -26,7 +26,10 @@ def update_mapping_table():
             header_line = False
             continue
         
-        values = line.split(',')
+        # make sure the values dont contain injections
+        sanitized_line = validate(line)
+        
+        values = sanitized_line.split(',')
         if(len(values) < 3): # 3 Values needed
             continue
         if(values[1] == ''): # Don't append data if no port available
@@ -41,5 +44,5 @@ def update_mapping_table():
             mappings.append({'port':values[1], 
                                 'service':'There is no default Service'})
     bulk_create_mapping(mappings)
-    log('updated Mappingtable to the newest data')   
+    log('updated Mappingtable to the newest data', '!')   
 

@@ -96,8 +96,7 @@ def scan_for_vulnerabilities(service):
     by using the service. For this task the formatting of the service
     is required.
     '''
-    validated_service = validate(service) # validate before executing
-    command = f'{SEARCHSPLOIT_PATH} + {validated_service}'
+    command = f'{SEARCHSPLOIT_PATH} + {service}'
     output = os.popen(command).read()
     return output
             
@@ -109,6 +108,9 @@ def port_scan_host(host, port_list):
     if the bannergrabbing failed or if there was a binary response 
     it will display the default service according to IANA 
     instead / too.
+    
+    As a security measure, all Data that comes from external sources
+    (the output from searchsploit and the response from a tcp service)
     '''
     global found_ports
     found_ports = []
@@ -133,6 +135,7 @@ def port_scan_host(host, port_list):
     scan_time = get_timestamp()
     for port in found_ports:
         service: str
+        
         # Getting the Service
         banner, readable = bannergrabbing(host, port) # False / Banner 'bin' / 'str'
         if banner != '': # if there is a banner format it
@@ -141,11 +144,16 @@ def port_scan_host(host, port_list):
         if not readable:
             default_service = get_service_by_port(port)
             service = banner + default_service
+        # validate the data, since its from an external source
+        service = validate(service)
         
         # Searching for vulnerabilities
         vulnerabilities = scan_for_vulnerabilities(service)
+        # validate the data, since its from an external source
+        validated_vulnerabilites = validate(vulnerabilities)
+        
         results.append({'port':port, 'host':host, 'service': service, 
-                        'vulnerabilities': vulnerabilities, 
+                        'vulnerabilities': validated_vulnerabilites, 
                         'last_found': scan_time})
     log(f'ended scan {get_timestamp()}', '!')
     return results
