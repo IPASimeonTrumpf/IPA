@@ -45,4 +45,3 @@ def update_mapping_table():
                                 'service':'There is no default Service'})
     bulk_create_mapping(mappings)
     log('updated Mappingtable to the newest data', '!')   
-

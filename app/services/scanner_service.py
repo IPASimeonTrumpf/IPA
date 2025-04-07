@@ -5,7 +5,7 @@ from threading import Thread
 from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH
 from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
-
+from ..repositories.port__repository import create_port
 
 payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode()]
 
@@ -124,7 +124,7 @@ def port_scan_host(host, port_list):
     log(f'starting scan {get_timestamp()}', '!')
     for i in range(num_threads):
         ports_for_thread = port_list[int(i*task_size):int((i+1)*task_size)]
-        new_thread = Thread(target=worker, args=[host, ports_for_thread,])
+        new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,])
         new_thread.start()
         threads.append(new_thread)
     for thread in threads:
@@ -137,7 +137,7 @@ def port_scan_host(host, port_list):
         service: str
         
         # Getting the Service
-        banner, readable = bannergrabbing(host, port) # False / Banner 'bin' / 'str'
+        banner, readable = bannergrabbing(host.ip, port) # False / Banner 'bin' / 'str'
         if banner != '': # if there is a banner format it
             service = format_banner(banner, port)
             log(f'Found banner: {service}', '+')
@@ -151,10 +151,12 @@ def port_scan_host(host, port_list):
         vulnerabilities = scan_for_vulnerabilities(service)
         # validate the data, since its from an external source
         validated_vulnerabilites = validate(vulnerabilities)
-        
+        create_port(port_number=port, host_id=host.id, service=service, 
+                    vulnerabilities=vulnerabilities, found_date=scan_time)
         results.append({'port':port, 'host':host, 'service': service, 
                         'vulnerabilities': validated_vulnerabilites, 
                         'last_found': scan_time})
+        
     log(f'ended scan {get_timestamp()}', '!')
     return results
     
