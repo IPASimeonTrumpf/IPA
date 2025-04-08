@@ -6,7 +6,7 @@
 
 {% block body %}
 
-
+<p>Hint: if scanning 127.0.0.1 all ports above 2000</p>
 <table>
     <tr>
         <th>Port</th>
@@ -22,7 +22,7 @@
             <td>{{port.service}}</td>
             <td>
             {% if port.vulnerabilities|length > 100 %}
-                <p>Too long to display</p>
+                Too long to display
             {% else %}
                 {{ port.vulnerabilities }}
             {% endif %}

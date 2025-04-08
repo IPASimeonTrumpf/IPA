@@ -77,6 +77,7 @@ def bannergrabbing(host, port):
         socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_instance.settimeout(1)
         try:
+            log(f'grabbing banner on {host}:{port}','i')
             socket_instance.connect((host,port))
             socket_instance.send(payload)
             response = socket_instance.recv(1024)
@@ -111,7 +112,10 @@ def scan_for_vulnerabilities(service):
     is required.
     '''
     command = f'{SEARCHSPLOIT_PATH} {service}'
-    output = os.popen(command).read()
+    try:
+        output = os.popen(command).read()
+    except ValueError:
+        output = 'Searchsploit crashed'
     if NO_PAPER:
         output.split('Papers')[0]
     return output
@@ -187,17 +191,16 @@ def ping_scan(list_of_hosts: list[str]):
     return active_hosts
 
 
-def scan_host(host, option, return_array=None):
+def scan_host(host, option):
     global results_of_the_scans
     ''' just a simpler way of calling the correct function;
     its a mapping from option to the specific scan.
     '''
+    log(f'Starting "{option}" Scan at {get_timestamp()}', '!')
     if option == 'ping':
         # simply ping the host
-        os.popen('echo "test" >> /tmp/test.txt')
         if check_host_available(host.ip):
             results_of_the_scans.append(f'{host.ip} is online')
-            return_array.append(f'{host.ip} is online')
             return f'{host.ip} is online'
         else:
             return f'{host.ip} is not online'
@@ -226,8 +229,6 @@ def scan_host(host, option, return_array=None):
         
         results = port_scan_host(host,ports)
         results_of_the_scans.append(results)
-        if return_array!=None:
-            return_array.append(results)
         return results
     else:
         # specific ports comma separated
@@ -236,13 +237,10 @@ def scan_host(host, option, return_array=None):
         for port_as_string in ports_as_strings:
             try:
                 ports.append(int(port_as_string))
-            except ValueError:
+            except (TypeError, ValueError):
                 return 'There were invalid values in the specific ports'
-            
         results = port_scan_host(host,ports)
         results_of_the_scans.append(results)
-        if return_array!=None:
-            return_array.append(results)
         return results
             
 
@@ -259,6 +257,7 @@ def scan_hosts(hosts, option, return_return_array=None):
     
     if type(hosts) != type([]):
         hosts = [hosts]
+
     for host in hosts:
         thread = Thread(target=scan_host, args=(host, option,return_array,))
         threads.append(thread)

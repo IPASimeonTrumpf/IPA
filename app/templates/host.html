@@ -10,7 +10,7 @@
         <button class='1000' onclick="scan('{{host.id}}', '1000')">scan first 1000 Ports</button>
         <button onclick="scan('{{host.id}}', 'all')">scan all ports</button>
         <button onclick="scan('{{host.id}}', 'ping')">Ping-Scan Host</button>
-        <input placeholder="(list,of,ports)">
+        <input placeholder="(list,of,ports)" id="specific">
         <button onclick="scan('{{host.id}}', 'specific')">Scan specific ports</button>
     </article>
     <article>

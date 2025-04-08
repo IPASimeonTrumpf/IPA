@@ -1,7 +1,7 @@
 function scan(host_id, port_list) {
     let option = ''
     if(port_list == 'specific') {
-        ports = document.getElementById('specific').value
+        option = document.getElementById('specific').value
     } else {
         option = port_list
     }
@@ -14,7 +14,12 @@ function scan(host_id, port_list) {
     })
     .then(resp => resp.json())
     .then(data => {
-        alert(`Scan finished, found ${data.data.length} open ports`)
+        if(option == 'ping') {
+            alert(data.msg)
+        } else {
+            alert(`Scan finished, found ${data.data.length} open ports`)
+        }
+        
     })
 
 }

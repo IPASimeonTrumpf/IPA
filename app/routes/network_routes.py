@@ -67,6 +67,7 @@ def serve_network(id):
 def serve_scan_network():
     input_network_id = request.json['network_id']
     input_option = request.json['option']
+    print(input_option)
     input_network_id_as_string = validate(input_network_id)
     option = validate(input_option)
     try:
@@ -74,9 +75,12 @@ def serve_scan_network():
     except ValueError:
         return 'Id was not a Integer, please submit a valid id'
     response = scan_network(id=network_id, option=option)
+    print('response')
+    print(response)
+    if option == 'ping':
+        return jsonify({'msg':response})
     for result in response:
-        print(result[0])
+        print(result)
         # format
-    return ''
     print(response)
     return jsonify({'msg':response})

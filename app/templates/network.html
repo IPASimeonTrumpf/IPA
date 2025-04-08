@@ -14,9 +14,10 @@
         <button class='1000' onclick="scan('{{network.id}}', '1000')">scan first 1000 Ports</button>
         <button onclick="scan('{{network.id}}', 'all')">scan all ports</button>
         <button onclick="scan('{{network.id}}', 'ping')">Ping-Scan Network</button>
-        <input placeholder="(list,of,ports)">
+        <input placeholder="(list,of,ports)" id="specific">
         <button onclick="scan('{{network.id}}', 'specific')">Scan specific ports</button>
     </article>
+    <p>Hint: Scanning all Ports takes quite some time (2 Minutes on Localhost)</p>
     <article>
     {% for host in network.hosts %}
         <button class="host" onclick="redirect('/host/{{host.id}}')">{{host.ip}}</button>

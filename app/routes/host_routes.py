@@ -37,6 +37,8 @@ def serve_scan_host():
         return 'Host not found', 404
     result = scan_host(host=host, option=option)
     json_serializable_data = []
+    if option == 'ping':
+        return jsonify({'msg':result})
     for data in result:
         # formatting
         long_vulnerability =len(data['vulnerabilities']) > 100
