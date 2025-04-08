@@ -5,16 +5,37 @@
 {% endblock %}
 
 {% block body %}
-<p>{{host}}</p>
+
+
 <table>
     <tr>
-        <th>h1</th>
-        <th>h2</th>
+        <th>Port</th>
+        <th>Host</th>
+        <th>Service</th>
+        <th>Vulnerability</th>
+        <th>Timestamp</th>
     </tr>
-    <tr>
-        <td>v1</td>
-        <td>v2</td>
-    </tr>
+    {% for port in host.ports %}
+        <tr>
+            <td>{{port.port}}</td>
+            <td>{{host.ip}}</td>
+            <td>{{port.service}}</td>
+            <td>
+            {% if port.vulnerabilities|length > 100 %}
+                <p>Too long to display</p>
+            {% else %}
+                {{ port.vulnerabilities }}
+            {% endif %}
+            </td>
+            
+            <td>{{port.last_found}}</td>
+        </tr>
     
 </table>
+<br>
+{% endfor %}
+    {% if not host.ports %}
+        <p>It looks like no ports were found for this host so far</p>
+    {% endif %}
+    <button onclick="history.back()">back to host</button>
 {% endblock %}

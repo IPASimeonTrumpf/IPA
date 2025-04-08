@@ -13,10 +13,10 @@ def index():
 def serve_create_network():
     json_data = request.json['ip_with_cidr']
     ip_with_cidr = validate(json_data)
-    
+    print(json_data)
     # validation of IP-Adress
     ip = ip_with_cidr.split('/')[0]
-    if not ip.__contains__('.') or len(ip.split('.') != 4):
+    if not ip.__contains__('.') or len(ip.split('.')) != 4:
         return 'not a valid IP-Adress, format: xxx.xxx.xxx.xxx'
     for part in ip.split('.'):
         try:
@@ -74,4 +74,9 @@ def serve_scan_network():
     except ValueError:
         return 'Id was not a Integer, please submit a valid id'
     response = scan_network(id=network_id, option=option)
-    return response
+    for result in response:
+        print(result[0])
+        # format
+    return ''
+    print(response)
+    return jsonify({'msg':response})

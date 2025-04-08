@@ -5,4 +5,11 @@
 {% endblock %}
 
 {% block body %}
+
+    <h1>Welcome to Webmap</h1>
+
+    <h2>add a Network or Host</h2>
+    <input id="ip_with_cidr" placeholder="For example 192.168.1.1/24">
+    <button onclick="send_data()">Add Netwrok / Host</button>
+    <p id="error"></p>
 {% endblock %}

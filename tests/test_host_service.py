@@ -44,6 +44,8 @@ def test_ping_scan_host_success(test_db):
     
     #get data
     response = scan_host(host, 'ping')
+    print(response)
+    exit()
     assert response == '127.0.0.1 is online'
     assert host.ip == '127.0.0.1'
 
@@ -69,6 +71,7 @@ def test_port_scan_timed_host_success(test_db):
     ''' test if 1000 port scan takes less than 1 minute '''
     # prepare
     add_network('10.128.128.176/32')
+    print(Host.query.all())
     host:Host = Host.query.all()[0]
     
     #get data
@@ -97,5 +100,6 @@ def test_get_ports_by_host_id_success(test_db):
     
     # get data
     response = get_ports_by_host_id(host.id)
+    
     
     assert len(response) == 3

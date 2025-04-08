@@ -30,4 +30,6 @@ def get_mapping_by_id(id):
 
 def get_service_by_port(port_number):
     mapping = Mapping.query.filter(Mapping.port == port_number).first()
+    if mapping == None:
+        return 'No Service found'
     return mapping.service

@@ -5,5 +5,12 @@
 {% endblock %}
 
 {% block body %}
-<p>{{networks}}</p>
+    {% for network in networks %}
+        {% if network.size > 1%}
+            <button onclick="redirect('/network/{{network.id}}')">Network {{network.ip}}</button>
+        {% endif %}
+        {% if network.size == 1%}
+            <button onclick="redirect('/host/{{network.id}}')">Host {{network.ip}}</button>
+        {% endif %}
+    {% endfor %}
 {% endblock %}

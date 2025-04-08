@@ -6,6 +6,7 @@ from .routes.network_routes import network_blueprint
 from .routes.host_routes import host_blueprint
 from .routes.mapping_routes import mapping_blueprint
 
+from .services.network_service import scan_network
 
 def create_app():
     
@@ -20,6 +21,5 @@ def create_app():
     
     with app.app_context():
         db.create_all()
-        
     return app
     

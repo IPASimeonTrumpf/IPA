@@ -5,5 +5,23 @@
 {% endblock %}
 
 {% block body %}
-<p>{{network}}</p>
+<section>
+    <article>
+        <h1>{{network.ip}}</h1>
+        <h2>{{network.subnet}}</h2>
+    </article>
+    <article id="Scan-Options">
+        <button class='1000' onclick="scan('{{network.id}}', '1000')">scan first 1000 Ports</button>
+        <button onclick="scan('{{network.id}}', 'all')">scan all ports</button>
+        <button onclick="scan('{{network.id}}', 'ping')">Ping-Scan Network</button>
+        <input placeholder="(list,of,ports)">
+        <button onclick="scan('{{network.id}}', 'specific')">Scan specific ports</button>
+    </article>
+    <article>
+    {% for host in network.hosts %}
+        <button class="host" onclick="redirect('/host/{{host.id}}')">{{host.ip}}</button>
+    {% endfor %}
+    </article>
+</section>
+<script src="{{url_for('static', filename='js/network.js')}}"></script>
 {% endblock %}

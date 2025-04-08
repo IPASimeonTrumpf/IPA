@@ -1,11 +1,13 @@
 from flask import Blueprint, render_template, request, jsonify
 
-from ..utils import validate
+from ..utils import validate, get_timestamp
 from ..services.host_service import get_host_by_id, scan_host
+
+from ..repositories.port__repository import create_port
 
 host_blueprint:Blueprint = Blueprint('host', __name__, static_folder='static')
 
-@host_blueprint.route('/hosts/<id>')
+@host_blueprint.route('/host/<id>')
 def serve_get_host_by_id(id):
     id_as_str = validate(id)
     id_as_int:int = 0
@@ -34,7 +36,21 @@ def serve_scan_host():
     if not host:
         return 'Host not found', 404
     result = scan_host(host=host, option=option)
-    return jsonify({'data':result}), 200
+    json_serializable_data = []
+    for data in result:
+        # formatting
+        long_vulnerability =len(data['vulnerabilities']) > 100
+        print(long_vulnerability)
+        create_port(port_number=data['port'],host_id=data['host'].id,service=data['service'],vulnerabilities=data['vulnerabilities'],
+                    found_date=get_timestamp())
+        json_serializable_data.append({'port_number':data['port'],
+                                       'host_id':data['host'].id,
+                                       'service':data['service'],
+                                       'vulnerabilities':data['vulnerabilities'],
+                                       'vuln_long':long_vulnerability,
+                                       'found_date':get_timestamp()})
+        
+    return jsonify({'data':json_serializable_data}), 200
     
     
 @host_blueprint.route('/results/<id>')
@@ -48,6 +64,7 @@ def get_results_of_host(id):
     host = get_host_by_id(id_as_int)
     if not host:
         return 'Host not found', 404
+
     return render_template('results.html', css='', js='', host=host)
 
 @host_blueprint.route('/export_results/<id>')

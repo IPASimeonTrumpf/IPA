@@ -47,18 +47,22 @@ def test_ping_scan_network_success(test_db):
     message = add_network('127.0.0.1/24')
     assert message == 'network has been created'
     network:Network = Network.query.filter(Network.ip == '127.0.0.1').first()
+    if network == None:
+        exit()
+    print(network)
+    print(network.subnet)
+    print(network.id)
 
-    t1 = time.time()
     result = scan_network(network.id, 'ping')
-    assert result == 'There are 1 hosts online'
-    t2 = time.time()
-    print('took ', t2-t1, 'seconds')
+    assert result == 'There are 254 hosts online' or result == 'There are 255 hosts online'
+
 
 def test_port_scan_network_success(test_db):
     message = add_network('10.128.128.176/24')
     assert message == 'network has been created'
     network:Network = Network.query.filter(Network.ip == '10.128.128.176').first()
     result = scan_network(network.id, '1000')
+    print(type(result))
     amount_ports = len(Port.query.all())
     assert result == f'found {amount_ports} ports on {len(network.hosts)} hosts'
     

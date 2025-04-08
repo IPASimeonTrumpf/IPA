@@ -6,7 +6,8 @@ from .scanner_service import scan_host, scan_hosts
 from ..utils import log
 from ..repositories.network_repository import create_network, get_network_by_id, get_all_networks
 from ..repositories.host_repository import create_host
-from ..services.scanner_service import check_host_available
+from ..services.scanner_service import check_host_available, retrieve_hosts
+from ..repositories.port__repository import create_port
 from ..models.network import Network
 
 
@@ -39,20 +40,22 @@ def add_network(ip_with_cidr:str):
     display_ip:str = ip_with_cidr.split('/')[0]
     network_id:int = create_network(ip_address=display_ip, subnet_mask=subnet_mask).id
     log(f'Added Network: {display_ip}')
-    
     threads:list[Thread] = []
     found_hosts:list[str] = []
     for possible_host in possible_hosts:
-        
         resp:bool = False
-        thread = Thread(target=check_host_available, args=[possible_host,found_hosts])
+        thread = Thread(target=check_host_available, args=(possible_host,found_hosts,))
         threads.append(thread)
-    for thread in threads:
         thread.start()
-            
+    print(len(found_hosts))
+    for thread in threads:
+        thread.join()
+    
+    
+    
     for host in found_hosts:
-        log(f'Added host: {possible_host} to network: {display_ip}', '+')
-        create_host(ip_address=possible_host, network_id=network_id)
+        log(f'Added host: {host} to network: {display_ip}', '+')
+        create_host(ip_address=host, network_id=network_id)
     return 'network has been created'
 
 def scan_network(id, option):
@@ -60,8 +63,11 @@ def scan_network(id, option):
     Expects the values are already santized
     '''
     network_to_scan:Network = get_network_by_id(id)
-    results = scan_hosts(hosts=network_to_scan.hosts, option=option)
-    
+    results = []
+    for host in network_to_scan.hosts:
+        results.append(scan_host(host, option))
+    print(results)
+    return results
     # format it to give a simple overview
     if option == 'ping':
         return f'There are {len(results)} hosts online'
@@ -69,6 +75,10 @@ def scan_network(id, option):
         hosts:list[int] = []
         ports:int = 0
         for result in results:
+            create_port(port_number=result['port'], host_id=int(result['host'].id), 
+                    service=result['service'], 
+                    vulnerabilities=result['vulnerabilities'], 
+                    found_date=result['last_found'])
             if result['host'].host_id not in hosts:
                 hosts.append(result.host_id)
             ports += 1

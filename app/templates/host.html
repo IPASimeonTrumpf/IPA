@@ -5,5 +5,20 @@
 {% endblock %}
 
 {% block body %}
-<p>{{host}}</p>
+<section>
+    <article id="Scan-Options">
+        <button class='1000' onclick="scan('{{host.id}}', '1000')">scan first 1000 Ports</button>
+        <button onclick="scan('{{host.id}}', 'all')">scan all ports</button>
+        <button onclick="scan('{{host.id}}', 'ping')">Ping-Scan Host</button>
+        <input placeholder="(list,of,ports)">
+        <button onclick="scan('{{host.id}}', 'specific')">Scan specific ports</button>
+    </article>
+    <article>
+        <button onclick="redirect('/results/{{host.id}}')">Results</button>
+    </article>
+    <article>
+        <button onclick="history.back()">back</button>
+    </article>
+</section>
+<script src="{{url_for('static', filename='js/host.js')}}"></script>
 {% endblock %}

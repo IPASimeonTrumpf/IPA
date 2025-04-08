@@ -12,19 +12,29 @@ payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode()]
 found_ports:list[int] = []
 results_of_the_scans:list = []
 
-def check_host_available(host:str, found_host=None):
+
+check_host_available_found_hosts = []
+def retrieve_hosts():
+    tmp_found_hosts = []
+    global found_hosts
+    tmp_found_hosts = found_hosts
+    found_hosts = []
+    return tmp_found_hosts
+    
+
+def check_host_available(host:str, found_hosts=None):
     ''' Makes a simple Ping on the Host to check the availability
     returns True if online and False if no response / the host not 
     found
     This variable won't be sanitized since it should already be
     there is a timeout of 2 seconds in the ping
     '''
+    global check_host_available_found_hosts
     output = os.popen(f'ping -c 1 -W 2 {host}').read()
-    if 'name or service not known' in output:
-        return False
     if '64 bytes from ' in output:
-        if found_host:
-            found_host.append(host)
+        if found_hosts != None:
+            found_hosts.append(host)
+        check_host_available_found_hosts.append(host)
         return True
     if output == '':
         return False
@@ -92,7 +102,7 @@ def format_banner(banner, port):
     if port == 80 or port == 443:
         return banner.split('Host: ')[1].split('\r\n\r')[0]
     if port == 22:
-        return banner.split('SSH-2.0-')[1]
+        return banner.split('SSH-2.0-')[1].split('\n')[0]
     return banner
 
 def scan_for_vulnerabilities(service):
@@ -126,7 +136,8 @@ def port_scan_host(host, port_list):
     if(len(port_list) < num_threads):
         num_threads = len(port_list)
     task_size = len(port_list) / num_threads
-    log(f'starting scan {get_timestamp()}', '!')
+    log(f'starting scan {get_timestamp()}')
+    
     for i in range(num_threads):
         ports_for_thread = port_list[int(i*task_size):int((i+1)*task_size)]
         new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,found_ports,])
@@ -135,7 +146,7 @@ def port_scan_host(host, port_list):
     for thread in threads:
         thread.join()
         
-    log(f'found all ports {get_timestamp()}', '!')
+    log(f'found all ports {get_timestamp()}')
     
     scan_time = get_timestamp()
     for port in found_ports:
@@ -147,7 +158,7 @@ def port_scan_host(host, port_list):
             service = format_banner(banner, port)
             log(f'Found banner: {service}', '+')
         if not readable:
-            default_service = get_service_by_port(port)
+            default_service = get_service_by_port(int(port))
             service = banner + default_service
         # validate the data, since its from an external source
         service = validate(service)
@@ -156,8 +167,7 @@ def port_scan_host(host, port_list):
         vulnerabilities = scan_for_vulnerabilities(service)
         # validate the data, since its from an external source
         validated_vulnerabilites = validate(vulnerabilities)
-        create_port(port_number=port, host_id=host.id, service=service, 
-                    vulnerabilities=vulnerabilities, found_date=scan_time)
+        
         results.append({'port':port, 'host':host, 'service': service, 
                         'vulnerabilities': validated_vulnerabilites, 
                         'last_found': scan_time})
@@ -177,7 +187,7 @@ def ping_scan(list_of_hosts: list[str]):
     return active_hosts
 
 
-def scan_host(host, option):
+def scan_host(host, option, return_array=None):
     global results_of_the_scans
     ''' just a simpler way of calling the correct function;
     its a mapping from option to the specific scan.
@@ -186,6 +196,8 @@ def scan_host(host, option):
         # simply ping the host
         os.popen('echo "test" >> /tmp/test.txt')
         if check_host_available(host.ip):
+            results_of_the_scans.append(f'{host.ip} is online')
+            return_array.append(f'{host.ip} is online')
             return f'{host.ip} is online'
         else:
             return f'{host.ip} is not online'
@@ -193,14 +205,30 @@ def scan_host(host, option):
         ports: list[int] = []
         for i in range(1001):
             ports.append(i) # convert range to array
-        return port_scan_host(host,ports)
+            
+        results = port_scan_host(host,ports)
+        results_as_dicts: list[dict] = []
+        for result in results:
+            results_as_dicts.append({
+                'port': result['port'],
+                'host': host,
+                'service': result['service'],
+                'vulnerabilities':result['vulnerabilities'],
+                'last_found': str(result['last_found'])
+            })
+        return results_as_dicts
+    
     
     if option == 'all':
         ports: list[int] = []
         for i in range(65536):
             ports.append(i) # convert range to array
         
-        return port_scan_host(host,ports)
+        results = port_scan_host(host,ports)
+        results_of_the_scans.append(results)
+        if return_array!=None:
+            return_array.append(results)
+        return results
     else:
         # specific ports comma separated
         ports_as_strings:list[str] = option.split(',')
@@ -210,24 +238,49 @@ def scan_host(host, option):
                 ports.append(int(port_as_string))
             except ValueError:
                 return 'There were invalid values in the specific ports'
-        return port_scan_host(host,ports)
+            
+        results = port_scan_host(host,ports)
+        results_of_the_scans.append(results)
+        if return_array!=None:
+            return_array.append(results)
+        return results
             
 
-def scan_hosts(hosts, option):
+def scan_hosts(hosts, option, return_return_array=None):
     ''' Just a overlay for multiple hosts, so that no more logic needs
     to happen in the other business logic
     '''
     global results_of_the_scans
+    results_of_the_scans = []
     
     outputs:list = []
     threads:list[Thread] = []
+    return_array = []
+    
+    if type(hosts) != type([]):
+        hosts = [hosts]
     for host in hosts:
-        thread = Thread(target=scan_host, args=(host, option,))
+        thread = Thread(target=scan_host, args=(host, option,return_array,))
         threads.append(thread)
         thread.start() # start one thread for each host
         
     for thread in threads:
-        thread.join() 
+        thread.join()
+        
+    print(return_array)
+    if return_return_array != None:
+        for entry in return_array:
+            return_return_array.append(entry)
+    if option == 'ping':
+        return return_array
+    else:
+        return return_array
+            # if not a pingscan, add ports
+        for result in results_of_the_scans:
+            results_of_the_scans.append(result)
+            print(result)
     
     # when all threads are finished return all results
-    return results_of_the_scans
+    tmp_results_of_the_scans = results_of_the_scans
+    results_of_the_scans = []
+    return tmp_results_of_the_scans
