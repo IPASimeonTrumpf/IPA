@@ -5,11 +5,22 @@
 {% endblock %}
 
 {% block body %}
-
-    <h1>Welcome to Webmap</h1>
-
-    <h2>add a Network or Host</h2>
-    <input id="ip_with_cidr" placeholder="For example 192.168.1.1/24">
-    <button onclick="send_data()">Add Netwrok / Host</button>
-    <p id="error"></p>
+    <div class="center">
+        <h1>Welcome to Webmap</h1>
+    </div>
+    <div class="center">
+        <h2>add a Network or Host</h2>
+    </div>
+    <div class="center">
+        <input id="ip_with_cidr" placeholder="192.168.1.1/24">
+    </div>
+    <div class="center">
+        <button onclick="send_data()">Add Network / Host</button>
+    </div>
+    <div class="center">
+        <p id="error"></p>
+    </div>
+    <div class="center">
+        <p><br><br>Note that this process will take a moment</p>
+    </div>
 {% endblock %}

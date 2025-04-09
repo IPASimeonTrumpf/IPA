@@ -54,7 +54,7 @@ def test_ping_scan_network_success(test_db):
     print(network.id)
 
     result = scan_network(network.id, 'ping')
-    assert result == 'There are 254 hosts online' or result == 'There are 255 hosts online'
+    assert result == ('There are 254 hosts online' or result == 'There are 255 hosts online')
 
 
 def test_port_scan_network_success(test_db):

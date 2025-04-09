@@ -1,16 +1,20 @@
-{% extends 'base.html' %}
+<html>
+<head>
+    <style>
+        th, td {
+            border: 1px solid #333;
+        }
+        button {
+            margin-top: 2vh;
+        }
+    </style>
+</head>
+<body>
 
-{% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}">
-
-{% endblock %}
-
-{% block body %}
-<p id="id" style="opacity:0">{{host.id}}</p>
-<p id="host_ip" style="opacity:0">{{host.ip}}</p>
-<div class="center"></div>
+<div class="center">
     <h1>Scan result for {{host.ip}}</h1>
 </div>
+
 {% if host.ip == '127.0.0.1' %}
 <div class="center">
     <p>Hint: if scanning 127.0.0.1 all ports above 20000 are clientsided</p>
@@ -50,19 +54,6 @@
         {% if not host.ports %}
         <p>It looks like no ports were found for this host so far</p>
     {% endif %}
-    </div>
 
-    <div class="center">
-        <button onclick="download_results()">Export Results</button>
-    </div>
-        
-    <div class="center">
-        <button onclick="history.back()"><- back to host</button>
-    </div>
-    
-
-
-<script src="{{url_for('static', filename='js/results.js')}}"></script>
-
-
-{% endblock %}
+</body>
+</html>

@@ -7,20 +7,14 @@ from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
 from ..repositories.port__repository import create_port
 
-payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode()]
+# list of data used in order to find services by bannergrabbing.
+payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode(), ("HEAD / HTTP/1.1\r\n" + 
+                        "Host: example.com\r\n" + 
+                        "Connection: close\r\n\r\n").encode()]
 
-found_ports:list[int] = []
 results_of_the_scans:list = []
 
 
-check_host_available_found_hosts = []
-def retrieve_hosts():
-    tmp_found_hosts = []
-    global found_hosts
-    tmp_found_hosts = found_hosts
-    found_hosts = []
-    return tmp_found_hosts
-    
 
 def check_host_available(host:str, found_hosts=None):
     ''' Makes a simple Ping on the Host to check the availability
@@ -29,12 +23,10 @@ def check_host_available(host:str, found_hosts=None):
     This variable won't be sanitized since it should already be
     there is a timeout of 2 seconds in the ping
     '''
-    global check_host_available_found_hosts
     output = os.popen(f'ping -c 1 -W 2 {host}').read()
     if '64 bytes from ' in output:
         if found_hosts != None:
             found_hosts.append(host)
-        check_host_available_found_hosts.append(host)
         return True
     if output == '':
         return False
@@ -100,8 +92,8 @@ def format_banner(banner, port):
     '''Used to format the Banner send, can be appended for each port
     will perhaps be appended to the database too in a later realease
     '''
-    if port == 80 or port == 443:
-        return banner.split('Host: ')[1].split('\r\n\r')[0]
+    if port == 80 or port == 443 or port == 5000:
+        return banner.split('Server: ')[1].split('\n')[0]
     if port == 22:
         return banner.split('SSH-2.0-')[1].split('\n')[0]
     return banner
@@ -122,8 +114,7 @@ def scan_for_vulnerabilities(service):
             
         
 def port_scan_host(host, port_list):
-    ''' This is the "main"-function of this application
-    It will first try a connection to each port in the list
+    ''' It will first try a connection to each port in the list
     afterwards, for each found port will try to grab the banner.
     if the bannergrabbing failed or if there was a binary response 
     it will display the default service according to IANA 
@@ -143,40 +134,49 @@ def port_scan_host(host, port_list):
     log(f'starting scan {get_timestamp()}')
     
     for i in range(num_threads):
+        # take all Ports and splitt it so each Thread
+        # will take a fraction of the ports
         ports_for_thread = port_list[int(i*task_size):int((i+1)*task_size)]
+        
+        # Then start all the threads
         new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,found_ports,])
         new_thread.start()
         threads.append(new_thread)
+        
     for thread in threads:
+        # wait for the threads to finish before going further
         thread.join()
         
-    log(f'found all ports {get_timestamp()}')
+    log(f'found all ports at {get_timestamp()}')
     
     scan_time = get_timestamp()
     for port in found_ports:
         service: str
         
         # Getting the Service
-        banner, readable = bannergrabbing(host.ip, port) # False / Banner 'bin' / 'str'
+        banner, readable = bannergrabbing(host.ip, port)
         if banner != '': # if there is a banner format it
             service = format_banner(banner, port)
             log(f'Found banner: {service}', '+')
-        if not readable:
+        if not readable: # if its binary or no response, append the default
             default_service = get_service_by_port(int(port))
             service = banner + default_service
+
         # validate the data, since its from an external source
         service = validate(service)
         
         # Searching for vulnerabilities
         vulnerabilities = scan_for_vulnerabilities(service)
+        
         # validate the data, since its from an external source
         validated_vulnerabilites = validate(vulnerabilities)
         
+        # Collect all the data
         results.append({'port':port, 'host':host, 'service': service, 
                         'vulnerabilities': validated_vulnerabilites, 
                         'last_found': scan_time})
-        
-    log(f'ended scan {get_timestamp()}', '!')
+    # return the collected data
+    log(f'ended scan {get_timestamp()}')
     return results
     
 def ping_scan(list_of_hosts: list[str]):
@@ -274,12 +274,3 @@ def scan_hosts(hosts, option, return_return_array=None):
         return return_array
     else:
         return return_array
-            # if not a pingscan, add ports
-        for result in results_of_the_scans:
-            results_of_the_scans.append(result)
-            print(result)
-    
-    # when all threads are finished return all results
-    tmp_results_of_the_scans = results_of_the_scans
-    results_of_the_scans = []
-    return tmp_results_of_the_scans

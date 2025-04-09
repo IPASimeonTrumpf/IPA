@@ -1,28 +1,34 @@
 {% extends 'base.html' %}
 
 {% block head %}
-
+<link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">
 {% endblock %}
 
 {% block body %}
 <section>
     <article>
-        <h1>{{network.ip}}</h1>
-        <h2>{{network.subnet}}</h2>
+        <h1>Network: {{network.ip}}</h1>
+        <h2>Subnet: {{network.subnet}}</h2>
     </article>
-    <article id="Scan-Options">
-        <button class='1000' onclick="scan('{{network.id}}', '1000')">scan first 1000 Ports</button>
-        <button onclick="scan('{{network.id}}', 'all')">scan all ports</button>
-        <button onclick="scan('{{network.id}}', 'ping')">Ping-Scan Network</button>
+    <div class="scan_options" id="Scan_Options">
+        <button class='primary' onclick="scan('{{network.id}}', '1000')">Scan first 1000 Ports</button>
+        <button onclick="scan('{{network.id}}', 'all')">Scan all Ports</button>
+        <button onclick="scan('{{network.id}}', 'ping')">Ping each Host</button>
+        <div class="break"></div>
         <input placeholder="(list,of,ports)" id="specific">
-        <button onclick="scan('{{network.id}}', 'specific')">Scan specific ports</button>
-    </article>
-    <p>Hint: Scanning all Ports takes quite some time (2 Minutes on Localhost)</p>
-    <article>
-    {% for host in network.hosts %}
-        <button class="host" onclick="redirect('/host/{{host.id}}')">{{host.ip}}</button>
-    {% endfor %}
-    </article>
+        <button onclick="scan('{{network.id}}', 'specific')">Scan specific Ports</button>
+    </div>
+    <div class="host_list">
+    <p>Scanning all ports will take some time (around 2 minutes per localhost)</p>
+        {% for host in network.hosts %} 
+                <button class="host" onclick="redirect('/host/{{host.id}}')">{{host.ip}}</button>
+        {% endfor %}
+    </div>
+    <br>
+    <br>
+    <div id="spinner" class="loader"></div>
+    
+    
 </section>
 <script src="{{url_for('static', filename='js/network.js')}}"></script>
 {% endblock %}

@@ -6,7 +6,7 @@ from .scanner_service import scan_host, scan_hosts
 from ..utils import log, get_timestamp
 from ..repositories.network_repository import create_network, get_network_by_id, get_all_networks
 from ..repositories.host_repository import create_host
-from ..services.scanner_service import check_host_available, retrieve_hosts
+from ..services.scanner_service import check_host_available
 from ..repositories.port__repository import create_port
 from ..models.network import Network
 
@@ -35,7 +35,7 @@ def add_network(ip_with_cidr:str):
     try:
         possible_hosts, subnet_mask = get_network_data(ip_with_cidr)
     except:
-        return 'some error has prevented calculating the hosts / subnet'
+        return 'Network could not be calculated, please verify your data'
     
     display_ip:str = ip_with_cidr.split('/')[0]
     network_id:int = create_network(ip_address=display_ip, subnet_mask=subnet_mask).id
@@ -71,7 +71,7 @@ def scan_network(id, option):
         data.write(str(results))
     if option == 'ping':
         return f'{len(results)} Hosts are online'
-        
+    
     for host in results:
         for found_port in host:
             data = found_port

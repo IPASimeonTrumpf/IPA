@@ -1,0 +1,73 @@
+/* GENERIERT MIT CHATGPT */
+/* Allgemeines Layout */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    text-align: center;
+    background-color: white;
+    margin: 2rem;
+  }
+  
+  /* IP-Titel */
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .break {
+    flex-basis: 100%;
+    height: 0;
+  }
+  
+  /* Scan Options Container */
+  .scan_options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Buttons allgemein */
+  button {
+    padding: 10px 16px;
+    font-size: 15px;
+    border: 2px solid black;
+    border-radius: 12px;
+    background-color: white;
+    color: black;
+    box-shadow: 2px 2px 0 black;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  
+  button:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Input für spezifische Ports */
+  #specific {
+    padding: 10px;
+    font-size: 15px;
+    border: 2px solid black;
+    border-radius: 12px;
+    width: 10em;
+    height: 2.5em;
+  }
+  .loader {
+    border: 6px solid #f3f3f3;       /* Hintergrundring */
+    border-top: 6px solid #3498db;   /* Farbe des drehenden Teils */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: auto;
+    opacity: 0;
+  }
+  p {
+    opacity: 0;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  

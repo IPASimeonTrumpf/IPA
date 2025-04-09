@@ -35,6 +35,19 @@ def serve_scan_host():
     host = get_host_by_id(host_id)
     if not host:
         return 'Host not found', 404
+    
+    print(option)
+    if option != '1000' and option != 'all' and option != 'ping':
+        # validate specific ports
+        if option.__contains__(','):
+            for port in option.split(','):
+                try:
+                    test = int(port)
+                except ValueError:
+                    return 'Invalid port', 400
+        else:
+            return 'Invalid format for specific scan'
+    print('valid')
     result = scan_host(host=host, option=option)
     json_serializable_data = []
     if option == 'ping':
@@ -71,7 +84,9 @@ def get_results_of_host(id):
 
 @host_blueprint.route('/export_results/<id>')
 def export_results(id):
+    print(id)
     id_as_str = validate(id)
+    print(id_as_str)
     id_as_int:int = 0
     try:
         id_as_int = int(id_as_str)
@@ -80,10 +95,5 @@ def export_results(id):
     host = get_host_by_id(id_as_int)
     if not host:
         return 'Host not found', 404
-    
-    with open('../static/css/results.css', 'r') as css_file:
-        css = css_file.read()
-    with open('../static/js/results.js', 'r') as js_file:
-        js = js_file.read()
         
-    return render_template('results.html', css=css, js=js, host=host)
+    return render_template('result_for_export.html', host=host)

@@ -27,7 +27,7 @@ def scan_host_by_id(id, option):
     ports:int = 0
     target_host:Host = get_host_by_id(id)
     return_array = []
-    response = scan_host(host=target_host, option=option, return_array=return_array)
+    response = scan_host(host=target_host, option=option)
     print('return array')
     print(return_array)
     print(response)

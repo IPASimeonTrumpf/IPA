@@ -14,26 +14,28 @@ def serve_create_network():
     json_data = request.json['ip_with_cidr']
     ip_with_cidr = validate(json_data)
     print(json_data)
+    if not ip_with_cidr.__contains__('/'):
+        return 'No / was supplied', 400
     # validation of IP-Adress
     ip = ip_with_cidr.split('/')[0]
     if not ip.__contains__('.') or len(ip.split('.')) != 4:
-        return 'not a valid IP-Adress, format: xxx.xxx.xxx.xxx'
+        return 'not a valid IP-Adress, format: xxx.xxx.xxx.xxx', 400
     for part in ip.split('.'):
         try:
             part = int(part)
             if part > 255 or part < 0:
-                return f'IP contains invalid value: {part}'
+                return f'IP contains invalid value: {part}', 400
         except ValueError:
-            return 'IP contains non-numeric contents'
+            return 'IP contains non-numeric contents', 400
     
     # Validate CIDR
     cidr_as_string = ip_with_cidr.split('/')[1]
     try:
         cidr = int(cidr_as_string)
     except ValueError:
-        return 'Invalid CIDR'
+        return 'Invalid CIDR', 400
     if cidr > 32 or cidr < 24:
-        return 'CIDR is not between 23 and 33, therefore invalid'
+        return 'CIDR is not between 23 and 33, therefore invalid', 400
     
     
     
@@ -42,11 +44,12 @@ def serve_create_network():
     if response == 'network has been created':
         return jsonify({'msg': response}), 201
     else:
-        return jsonify({'error': response}), 400
+        return response, 400
     
 @network_blueprint.route('/overview')
 def overview():
     networks = get_all_networks_formatted()
+    print(networks)
     return render_template('overview.html', networks=networks)
 
 
@@ -73,7 +76,19 @@ def serve_scan_network():
     try:
         network_id = int(input_network_id_as_string)
     except ValueError:
-        return 'Id was not a Integer, please submit a valid id'
+        return 'Id was not a Integer, please submit a valid id', 400
+    
+    if option != '1000' and option != 'all' and option != 'ping':
+        # validate specific ports
+        if option.__contains__(','):
+            for port in option.split(','):
+                try:
+                    test = int(port)
+                except ValueError:
+                    return 'Invalid port', 400
+        else:
+            return 'Invalid format for specific scan', 400
+    
     response = scan_network(id=network_id, option=option)
     print('response')
     print(response)

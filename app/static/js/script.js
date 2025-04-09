@@ -4,16 +4,25 @@ function redirect(path) {
 
 function send_data() {
     let ip_with_cidr = document.getElementById('ip_with_cidr').value
-    if(validate_ip_and_cidr(ip_with_cidr) === true) {
+    ip_with_cidr = validate_ip_and_cidr(ip_with_cidr)
+    if(ip_with_cidr != false) {
         fetch('/create_network', { method:'POST',
             'headers': {
                 'Content-Type': 'Application/json'
             },
             body: JSON.stringify({'ip_with_cidr':ip_with_cidr})
         })
-        .then(resp => resp.json())
+        .then(resp => {
+            if(!resp.ok) {
+                let error = document.getElementById('error')
+                resp.text().then(data => error.innerText = data)
+            } else {
+                return resp.json()
+            }
+        })   
         .then(data => {
             alert(data['msg'])
+            redirect('/overview')
         })
         .error(resp => resp.json())
         .then(data => {
@@ -42,25 +51,26 @@ function validate_ip_and_cidr(ip_with_cidr) {
         parts = ip.split('.')
         if(parts.length != 4) {
             error.innerText = 'The IP has an invalid format'
-            return
+            return false
         }
-    console.log('parts')
-    console.log(parts)
     } catch {
         error.innerText = 'The IP has an invalid format'
+        return false
     }
     try {
         parts.forEach(element => {
             let part_as_int = parseInt(element)
             if(part_as_int > 255 || part_as_int < 0) {
-                console.log(part_as_int)
                 error.innerText = 'The IP has an invalid Value'
-                return
+                return false
             }
         });
     } catch (e) {
-        alert(e)
         error.innerText = 'The IP has an invalid Value'
+        return false
     }
-    return true
+    if(!ip_with_cidr.includes('/')) {
+        ip_with_cidr += '/32'
+    }
+    return ip_with_cidr
 }

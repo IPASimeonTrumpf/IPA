@@ -44,8 +44,6 @@ def test_ping_scan_host_success(test_db):
     
     #get data
     response = scan_host(host, 'ping')
-    print(response)
-    exit()
     assert response == '127.0.0.1 is online'
     assert host.ip == '127.0.0.1'
 
