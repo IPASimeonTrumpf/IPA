@@ -93,8 +93,5 @@ def serve_scan_network():
 
     if option == 'ping':
         return jsonify({'msg':response})
-    for result in response:
-        print(result)
-        # format
-    print(response)
+
     return jsonify({'msg':response})

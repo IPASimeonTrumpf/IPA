@@ -90,7 +90,10 @@ def format_banner(banner, port):
     will perhaps be appended to the database too in a later realease
     '''
     if port == 80 or port == 443 or port == 5000:
-        return banner.split('Server: ')[1].split('\n')[0]
+        try:
+            return banner.split('Server: ')[1].split('\n')[0]
+        except:
+            return f'No Server header found at port : {port}'
     if port == 22:
         return banner.split('SSH-2.0-')[1].split('\n')[0]
     return banner
@@ -164,15 +167,19 @@ def port_scan_host(host, port_list):
         
         # Searching for vulnerabilities
         vulnerabilities = scan_for_vulnerabilities(service)
-        
+        log(f'Found a vulnerability for service: {service}')
         # validate the data, since its from an external source
         validated_vulnerabilites = validate(vulnerabilities)
-        
+        data = {'port':port, 'host':host, 'service': service, 
+                        'vulnerabilities': validated_vulnerabilites, 
+                        'last_found': scan_time}
+
         # Collect all the data
         results.append({'port':port, 'host':host, 'service': service, 
                         'vulnerabilities': validated_vulnerabilites, 
                         'last_found': scan_time})
     # return the collected data
+    
     log(f'ended scan {get_timestamp()}')
     return results
     
@@ -189,10 +196,11 @@ def ping_scan(list_of_hosts: list[str]):
     return active_hosts
 
 
-def scan_host(host, option, return_array=None):
+def scan_host(host, option, return_array:list=None):
     ''' This is an overlay over all previous functions, in order to select
     the correct method.
     '''
+    # formatted for frontend
     results_as_dicts:list[dict] = []
     
     log(f'Starting "{option}" Scan at {get_timestamp()}', '!')
@@ -204,50 +212,40 @@ def scan_host(host, option, return_array=None):
             return f'{host.ip} is online'
         else:
             return f'{host.ip} is not online'
+        
+    # portscan
+    ports: list[int] = []
+    
+    # Make list of ports
     if option == '1000':
         ports: list[int] = []
         for i in range(1001):
             ports.append(i) # convert range to array
-            
-        results = port_scan_host(host,ports)
-        for result in results:
-            results_as_dicts.append({
-                'port': result['port'],
-                'host': host,
-                'service': result['service'],
-                'vulnerabilities':result['vulnerabilities'],
-                'last_found': str(result['last_found'])
-            })
-            if return_array != None:
-                    return_array.append(result)
-        return results_as_dicts
-    
-    
+
     if option == 'all':
-        ports: list[int] = []
         for i in range(65536):
             ports.append(i) # convert range to array
-        
-        results = port_scan_host(host,ports)
-        for result in results:
-            if return_array:
-                    return_array.append(result)
-            results_as_dicts.append(result)
-        return results_as_dicts
-    else:
-        # specific ports comma separated
-        ports_as_strings:list[str] = option.split(',')
-        ports: list[int] = []
-        for port_as_string in ports_as_strings:
+    
+    if ',' in option:
+        for port_as_string in option.split(','):
             try:
+                # convert all ports to numbers
                 ports.append(int(port_as_string))
             except (TypeError, ValueError):
                 return 'There were invalid values in the specific ports'
-        results = port_scan_host(host,ports)
-        for result in results:
-            if return_array:
-                    return_array.append(result)
-                    results_as_dicts.append(result)
+    
+    # start the scan
+    results = port_scan_host(host,ports)
+    print('results')
+    print(results)
+    for result in results:
+        # return the value according to the used method
+        # (return / parameter)
+        if return_array != None:
+                return_array.append(result)
+        else:
+            results_as_dicts.append(result)
+    
         return results_as_dicts
             
 
@@ -259,9 +257,9 @@ def scan_hosts(hosts, option):
     
     outputs:list = []
     threads:list[Thread] = []
+    # pass the function an array to store the results in
     return_array = []
     
-    print(hosts)
     for host in hosts:
         thread = Thread(target=scan_host, args=(host, option,return_array,))
         threads.append(thread)
@@ -269,6 +267,5 @@ def scan_hosts(hosts, option):
         
     for thread in threads:
         thread.join()
-    print("returnarray")
-    print(return_array)
+
     return return_array
