@@ -29,18 +29,18 @@
     </tr>
     {% for port in host.ports %}
         <tr>
-            <td>{{port.port}}</td>
-            <td>{{host.ip}}</td>
-            <td>{{port.service}}</td>
+            <td> {{port.port}} </td>
+            <td> {{host.ip}} </td>
+            <td> {{port.service}} </td>
             <td>
             {% if port.vulnerabilities|length > 100 %}
                 Too long to display
             {% else %}
-                {{ port.vulnerabilities }}
+                 {{ port.vulnerabilities }} 
             {% endif %}
             </td>
             
-            <td>{{port.last_found}}</td>
+            <td> {{port.last_found}} </td>
         </tr>
 {% endfor %}
 </table>

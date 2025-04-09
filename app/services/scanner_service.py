@@ -2,17 +2,14 @@ import os
 import socket
 from threading import Thread
 
-from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH, NO_PAPER
+from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH, PAPER, PAYLOADS
 from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
 from ..repositories.port__repository import create_port
 
 # list of data used in order to find services by bannergrabbing.
-payloads:list[bytes] = ['\r\n\r'.encode(), ''.encode(), ("HEAD / HTTP/1.1\r\n" + 
-                        "Host: example.com\r\n" + 
-                        "Connection: close\r\n\r\n").encode()]
 
-results_of_the_scans:list = []
+
 
 
 
@@ -64,8 +61,8 @@ def bannergrabbing(host, port):
     The payloads used are the global payloads, perhaps this list
     will be exported into the database in a later release.
     '''
-    global payloads
-    for payload in payloads:
+    
+    for payload in PAYLOADS:
         socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_instance.settimeout(1)
         try:
@@ -108,7 +105,7 @@ def scan_for_vulnerabilities(service):
         output = os.popen(command).read()
     except ValueError:
         output = 'Searchsploit crashed'
-    if NO_PAPER:
+    if not PAPER:
         output.split('Papers')[0]
     return output
             
@@ -181,26 +178,29 @@ def port_scan_host(host, port_list):
     
 def ping_scan(list_of_hosts: list[str]):
     ''' This function will simply ping each host in the
-    list and return each host that responded.
+    list and return each host that responded as a list[str]
     '''
     active_hosts: list[str] = []
     for host in list_of_hosts:
+        # ping host to check
         if check_host_available(host):
             active_hosts.append(host)
     
     return active_hosts
 
 
-def scan_host(host, option):
-    global results_of_the_scans
-    ''' just a simpler way of calling the correct function;
-    its a mapping from option to the specific scan.
+def scan_host(host, option, return_array=None):
+    ''' This is an overlay over all previous functions, in order to select
+    the correct method.
     '''
+    results_as_dicts:list[dict] = []
+    
     log(f'Starting "{option}" Scan at {get_timestamp()}', '!')
     if option == 'ping':
         # simply ping the host
         if check_host_available(host.ip):
-            results_of_the_scans.append(f'{host.ip} is online')
+            if return_array:
+                return_array.append(f'{host.ip} is online')
             return f'{host.ip} is online'
         else:
             return f'{host.ip} is not online'
@@ -210,7 +210,6 @@ def scan_host(host, option):
             ports.append(i) # convert range to array
             
         results = port_scan_host(host,ports)
-        results_as_dicts: list[dict] = []
         for result in results:
             results_as_dicts.append({
                 'port': result['port'],
@@ -219,6 +218,8 @@ def scan_host(host, option):
                 'vulnerabilities':result['vulnerabilities'],
                 'last_found': str(result['last_found'])
             })
+            if return_array != None:
+                    return_array.append(result)
         return results_as_dicts
     
     
@@ -228,8 +229,11 @@ def scan_host(host, option):
             ports.append(i) # convert range to array
         
         results = port_scan_host(host,ports)
-        results_of_the_scans.append(results)
-        return results
+        for result in results:
+            if return_array:
+                    return_array.append(result)
+            results_as_dicts.append(result)
+        return results_as_dicts
     else:
         # specific ports comma separated
         ports_as_strings:list[str] = option.split(',')
@@ -240,24 +244,24 @@ def scan_host(host, option):
             except (TypeError, ValueError):
                 return 'There were invalid values in the specific ports'
         results = port_scan_host(host,ports)
-        results_of_the_scans.append(results)
-        return results
+        for result in results:
+            if return_array:
+                    return_array.append(result)
+                    results_as_dicts.append(result)
+        return results_as_dicts
             
 
-def scan_hosts(hosts, option, return_return_array=None):
-    ''' Just a overlay for multiple hosts, so that no more logic needs
-    to happen in the other business logic
+def scan_hosts(hosts, option):
+    ''' This function applies scan_host on each host in the parameter
+    In order to achieve good efficiency each host gets a thread. 
     '''
-    global results_of_the_scans
-    results_of_the_scans = []
+
     
     outputs:list = []
     threads:list[Thread] = []
     return_array = []
     
-    if type(hosts) != type([]):
-        hosts = [hosts]
-
+    print(hosts)
     for host in hosts:
         thread = Thread(target=scan_host, args=(host, option,return_array,))
         threads.append(thread)
@@ -265,12 +269,6 @@ def scan_hosts(hosts, option, return_return_array=None):
         
     for thread in threads:
         thread.join()
-        
+    print("returnarray")
     print(return_array)
-    if return_return_array != None:
-        for entry in return_array:
-            return_return_array.append(entry)
-    if option == 'ping':
-        return return_array
-    else:
-        return return_array
+    return return_array

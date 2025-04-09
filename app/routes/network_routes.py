@@ -90,8 +90,7 @@ def serve_scan_network():
             return 'Invalid format for specific scan', 400
     
     response = scan_network(id=network_id, option=option)
-    print('response')
-    print(response)
+
     if option == 'ping':
         return jsonify({'msg':response})
     for result in response:

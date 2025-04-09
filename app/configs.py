@@ -1,9 +1,20 @@
 """ In this file are some variables defined that can be configured
 feel free to play around and configure until you like it the most
 """
+# General logging
+VERBOSE :bool = False
 
-IANA_PORT_TABLE_URL = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
-VERBOSE = False
-NUMBER_OF_THREADS = 40 # number of threads, the higher the faster, keep down if scanning networks, since each host will have one too
-SEARCHSPLOIT_PATH = '/opt/exploitdb/searchsploit' # path to searchsploit or similar function
-NO_PAPER = True # Whether or not to include Papers written about exploits
+# Datasource, not recommended to change
+IANA_PORT_TABLE_URL :str = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
+
+# Scanner Logic:
+# How many threads will be used (Per Host), keep down for network scans
+NUMBER_OF_THREADS :int = 40
+# path to the searchsploit executable, can be exchanged for any similar tool
+SEARCHSPLOIT_PATH :str = '/opt/exploitdb/searchsploit'
+# specific to searchsploit, whether or not to include papers, default False
+PAPER :bool = False
+# Payloads for Bannergrabbing
+PAYLOADS :list[bytes] = ['\r\n\r'.encode(), ''.encode(), ("HEAD / HTTP/1.1\r\n" + 
+                        "Host: example.com\r\n" + 
+                        "Connection: close\r\n\r\n").encode()]

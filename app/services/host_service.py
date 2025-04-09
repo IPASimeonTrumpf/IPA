@@ -1,6 +1,6 @@
 import ipaddress
 
-from .scanner_service import scan_hosts, scan_host
+from .scanner_service import scan_host
 
 from ..utils import log
 from ..repositories.host_repository import create_host, get_host_by_id

@@ -1,7 +1,7 @@
 import ipaddress
 from threading import Thread
 
-from .scanner_service import scan_host, scan_hosts
+from .scanner_service import scan_hosts
 
 from ..utils import log, get_timestamp
 from ..repositories.network_repository import create_network, get_network_by_id, get_all_networks
@@ -64,27 +64,23 @@ def scan_network(id, option):
     '''
     network_to_scan:Network = get_network_by_id(id)
     results = []
-    for host in network_to_scan.hosts:
-        results.append(scan_host(host, option))
+    results = scan_hosts(network_to_scan.hosts, option)
+
     results_as_dicts = []
-    with open('data.txt', 'w') as data:
-        data.write(str(results))
     if option == 'ping':
         return f'{len(results)} Hosts are online'
-    
-    for host in results:
-        for found_port in host:
-            data = found_port
 
-            create_port(port_number=data['port'],host_id=data['host'].id,service=data['service'],vulnerabilities=data['vulnerabilities'],
-                        found_date=get_timestamp())
-            long_vulnerability =len(data['vulnerabilities']) > 100
-            results_as_dicts.append({'port_number':data['port'],
-                                        'host_id':data['host'].id,
-                                        'service':data['service'],
-                                        'vulnerabilities':data['vulnerabilities'],
-                                        'vuln_long':long_vulnerability,
-                                        'found_date':get_timestamp()})
+    for data in results:
+
+        create_port(port_number=data['port'],host_id=data['host'].id,service=data['service'],vulnerabilities=data['vulnerabilities'],
+                    found_date=get_timestamp())
+        long_vulnerability =len(data['vulnerabilities']) > 100
+        results_as_dicts.append({'port_number':data['port'],
+                                    'host_id':data['host'].id,
+                                    'service':data['service'],
+                                    'vulnerabilities':data['vulnerabilities'],
+                                    'vuln_long':long_vulnerability,
+                                    'found_date':get_timestamp()})
     return results_as_dicts
     # format it to give a simple overview
     if option == 'ping':

@@ -6,6 +6,8 @@ function send_data() {
     let ip_with_cidr = document.getElementById('ip_with_cidr').value
     ip_with_cidr = validate_ip_and_cidr(ip_with_cidr)
     if(ip_with_cidr != false) {
+        spinner = document.getElementById('spinner')
+        spinner.style.opacity = 1
         fetch('/create_network', { method:'POST',
             'headers': {
                 'Content-Type': 'Application/json'
@@ -14,6 +16,7 @@ function send_data() {
         })
         .then(resp => {
             if(!resp.ok) {
+                spinner.style.opacity = 0
                 let error = document.getElementById('error')
                 resp.text().then(data => error.innerText = data)
             } else {
@@ -21,6 +24,7 @@ function send_data() {
             }
         })   
         .then(data => {
+            spinner.style.opacity = 0
             alert(data['msg'])
             redirect('/overview')
         })
