@@ -1,41 +1,37 @@
 {% extends 'base.html' %}
-
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/host.css') }}">
-
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/host.css') }}">
 {% endblock %}
-
 {% block body %}
-<div class="center">
-    {% if host.ip != host.network.ip %}
-        <h1>Host: {{host.ip}} (From Network Network :{{host.network.ip}})</h1>
-    {% else %}
-        <h1>Host: {{host.ip}}</h1>
-    {% endif %}
-    
-</div>
-<section>
-    
-    <div class="scan_options" id="Scan_Options">
-        <button class='primary' onclick="scan('{{host.id}}', '1000')">Scan first 1000 Ports</button>
-        <button onclick="scan('{{host.id}}', 'all')">Scan all Ports</button>
-        <button onclick="scan('{{host.id}}', 'ping')">Ping Host</button>
-        <div class="break"></div>
-        <input placeholder="(list,of,ports)" id="specific">
-        <button onclick="scan('{{host.id}}', 'specific')">Scan specific Ports</button>
+    <div class="center">
+        {% if host.ip != host.network.ip %}
+            <h1>Host: {{ host.ip }} (From Network Network :{{ host.network.ip }})</h1>
+        {% else %}
+            <h1>Host: {{ host.ip }}</h1>
+        {% endif %}
     </div>
+    <section>
+        <div class="scan_options" id="Scan_Options">
+            <button class='primary' onclick="scan('{{ host.id }}', '1000')">Scan first 1000 Ports</button>
+            <button onclick="scan('{{ host.id }}', 'all')">Scan all Ports</button>
+            <button onclick="scan('{{ host.id }}', 'ping')">Ping Host</button>
+            <div class="break"></div>
+            <input placeholder="(list,of,ports)" id="specific">
+            <button onclick="scan('{{ host.id }}', 'specific')">Scan specific Ports</button>
+        </div>
         <div class="center">
-            <button onclick="redirect('/results/{{host.id}}')">Results</button>
+            <button onclick="redirect('/results/{{ host.id }}')">Results</button>
         </div>
         <br>
         <div class="center">
-            <button onclick="history.back()"> <-back</button>
+            <button onclick="history.back()">
+                <-back
+            </button>
         </div>
         <br>
         <br>
         <div id="spinner" class="loader"></div>
-        
-    
-</section>
-<script src="{{url_for('static', filename='js/host.js')}}"></script>
+    </section>
+    <script src="{{url_for('static', filename='js/host.js')}}"></script>
 {% endblock %}

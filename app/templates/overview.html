@@ -1,27 +1,24 @@
 {% extends 'base.html' %}
-
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/overview.css') }}">
 {% endblock %}
-
 {% block body %}
-
     <div class="center">
         <h1>Overview</h1>
     </div>
     <br>
     <section>
-    {% for network in networks %}
-    {% if network.size > 0 %}
-    <article>
-        {% if network.size > 1%}
-        <button class="network" onclick="redirect('/network/{{network.id}}')">Network {{network.ip}}</button>
-        {% else %}
-            <button class="host" onclick="redirect('/host/{{network.hosts[0].id}}')">Host {{network.ip}}</button>
-        {% endif %}
-    </article>
-    {% endif %}
-{% endfor %}
-</section>
-    
+        {% for network in networks %}
+            {% if network.size > 0 %}
+                <article>
+                    {% if network.size > 1 %}
+                        <button class="network" onclick="redirect('/network/{{ network.id }}')">Network {{ network.ip }}</button>
+                    {% else %}
+                        <button class="host" onclick="redirect('/host/{{ network.hosts[0].id }}')">Host {{ network.ip }}</button>
+                    {% endif %}
+                </article>
+            {% endif %}
+        {% endfor %}
+    </section>
 {% endblock %}
