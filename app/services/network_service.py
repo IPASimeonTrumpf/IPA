@@ -65,12 +65,12 @@ def scan_network(id, option):
     network_to_scan:Network = get_network_by_id(id)
     results = []
     results = scan_hosts(network_to_scan.hosts, option)
-    print(results)
-    return
+    
+    
     results_as_dicts = []
     if option == 'ping':
         return f'{len(results)} Hosts are online'
-
+    
     for data in results:
         create_port(port_number=data['port'],host_id=data['host'].id,service=data['service'],vulnerabilities=data['vulnerabilities'],
                     found_date=get_timestamp())

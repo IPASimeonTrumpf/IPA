@@ -1,6 +1,9 @@
 import os
 import socket
 from threading import Thread
+from sqlalchemy import text, create_engine
+
+from ..extensions import db
 
 from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH, PAPER, PAYLOADS
 from ..utils import get_timestamp, log, validate
@@ -113,7 +116,7 @@ def scan_for_vulnerabilities(service):
     return output
             
         
-def port_scan_host(host, port_list):
+def port_scan_host(host, port_list, is_threaded=False):
     ''' It will first try a connection to each port in the list
     afterwards, for each found port will try to grab the banner.
     if the bannergrabbing failed or if there was a binary response 
@@ -158,12 +161,27 @@ def port_scan_host(host, port_list):
         if banner != '': # if there is a banner format it
             service = format_banner(banner, port)
             log(f'Found banner: {service}', '+')
-        if not readable: # if its binary or no response, append the default
-            default_service = get_service_by_port(int(port))
-            service = banner + default_service
+        if not readable:
+            if is_threaded:
+                # workaround application context
+                # manual database read
+                engine = create_engine('sqlite:///instance/database.db')
+                with engine.connect() as conn:
+                    mapping_answer = conn.execute(text('SELECT service FROM mapping WHERE port = :port'), {'port': int(port)})
+                    service = mapping_answer.first()
+                    if service == None:
+                        default_service = "No Service found"
+                    else:
+                        default_service = service[0]
+                        
+                service = banner + default_service
+            else: # if its binary or no response, append the default
+                default_service = get_service_by_port(int(port))
+                service = banner + default_service
 
         # validate the data, since its from an external source
         service = validate(service)
+        log(f'set service: {service} for port: {port}')
         
         # Searching for vulnerabilities
         vulnerabilities = scan_for_vulnerabilities(service)
@@ -181,6 +199,7 @@ def port_scan_host(host, port_list):
     # return the collected data
     
     log(f'ended scan {get_timestamp()}')
+
     return results
     
 def ping_scan(list_of_hosts: list[str]):
@@ -207,7 +226,7 @@ def scan_host(host, option, return_array:list=None):
     if option == 'ping':
         # simply ping the host
         if check_host_available(host.ip):
-            if return_array:
+            if return_array != None:
                 return_array.append(f'{host.ip} is online')
             return f'{host.ip} is online'
         else:
@@ -235,9 +254,8 @@ def scan_host(host, option, return_array:list=None):
                 return 'There were invalid values in the specific ports'
     
     # start the scan
-    results = port_scan_host(host,ports)
-    print('results')
-    print(results)
+    results = port_scan_host(host,ports,is_threaded=True)
+
     for result in results:
         # return the value according to the used method
         # (return / parameter)
@@ -246,7 +264,7 @@ def scan_host(host, option, return_array:list=None):
         else:
             results_as_dicts.append(result)
     
-        return results_as_dicts
+    return results_as_dicts
             
 
 def scan_hosts(hosts, option):
