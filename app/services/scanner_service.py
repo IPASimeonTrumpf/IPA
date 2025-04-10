@@ -1,19 +1,11 @@
 import os
 import socket
-from threading import Thread
 from sqlalchemy import text, create_engine
-
-from ..extensions import db
+from threading import Thread
 
 from ..configs import NUMBER_OF_THREADS, SEARCHSPLOIT_PATH, PAPER, PAYLOADS
 from ..utils import get_timestamp, log, validate
 from ..repositories.mapping_repository import get_service_by_port
-from ..repositories.port__repository import create_port
-
-# list of data used in order to find services by bannergrabbing.
-
-
-
 
 
 def check_host_available(host:str, found_hosts=None):
@@ -66,13 +58,17 @@ def bannergrabbing(host, port):
     '''
     
     for payload in PAYLOADS:
+        # create a tcp Ipv4 socket
         socket_instance = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_instance.settimeout(1)
         try:
             log(f'grabbing banner on {host}:{port}','i')
             socket_instance.connect((host,port))
             socket_instance.send(payload)
+            
+            # try to get the banner as a response
             response = socket_instance.recv(1024)
+            
             if(len(response) < 2):
                 continue
             else:
@@ -86,6 +82,7 @@ def bannergrabbing(host, port):
         except (TimeoutError, ConnectionRefusedError, ConnectionResetError):
             socket_instance.close()
             pass
+    
     return '', False
 
 def format_banner(banner, port):
@@ -142,7 +139,15 @@ def port_scan_host(host, port_list, is_threaded=False):
         ports_for_thread = port_list[int(i*task_size):int((i+1)*task_size)]
         
         # Then start all the threads
-        new_thread = Thread(target=worker, args=[host.ip, ports_for_thread,found_ports,])
+        new_thread = Thread(
+            target=worker, 
+            args=(
+                host.ip, 
+                ports_for_thread,
+                found_ports,    
+            )
+        )
+        
         new_thread.start()
         threads.append(new_thread)
         
@@ -160,45 +165,61 @@ def port_scan_host(host, port_list, is_threaded=False):
         banner, readable = bannergrabbing(host.ip, port)
         if banner != '': # if there is a banner format it
             service = format_banner(banner, port)
-            log(f'Found banner: {service}', '+')
+        
+        # if its not clear what service is running, get the default
         if not readable:
             if is_threaded:
-                # workaround application context
-                # manual database read
+                # workaround because no application context in thread
+                
+                # create a second engine
                 engine = create_engine('sqlite:///instance/database.db')
+                
+                # with the second engine, read the default service
                 with engine.connect() as conn:
-                    mapping_answer = conn.execute(text('SELECT service FROM mapping WHERE port = :port'), {'port': int(port)})
+                    command = 'SELECT service FROM mapping WHERE port = :port'
+                    query = text(command)
+                    mapping_answer = conn.execute(query, {'port': int(port)})
                     service = mapping_answer.first()
+                    # set the default service
                     if service == None:
-                        default_service = "No Service found"
+                        default_service = "No default Service found"
                     else:
                         default_service = service[0]
                         
                 service = banner + default_service
-            else: # if its binary or no response, append the default
+                
+            else:
+                # if application context is available, use the repo
                 default_service = get_service_by_port(int(port))
                 service = banner + default_service
 
         # validate the data, since its from an external source
         service = validate(service)
-        log(f'set service: {service} for port: {port}')
+        
+        # log the found service
+        log(f'set service: {service} for port: {port}', '+')
         
         # Searching for vulnerabilities
         vulnerabilities = scan_for_vulnerabilities(service)
+        
         log(f'Found a vulnerability for service: {service}')
         # validate the data, since its from an external source
         validated_vulnerabilites = validate(vulnerabilities)
-        data = {'port':port, 'host':host, 'service': service, 
-                        'vulnerabilities': validated_vulnerabilites, 
-                        'last_found': scan_time}
+
 
         # Collect all the data
-        results.append({'port':port, 'host':host, 'service': service, 
-                        'vulnerabilities': validated_vulnerabilites, 
-                        'last_found': scan_time})
-    # return the collected data
+        results.append({
+            'port':port, 
+            'host':host, 
+            'service': service, 
+            'vulnerabilities': validated_vulnerabilites, 
+            'last_found': scan_time
+        })
+        
     
-    log(f'ended scan {get_timestamp()}')
+    # log and return results
+    
+    log(f'ended the Portscan on {host.ip} {get_timestamp()}')
 
     return results
     
@@ -223,11 +244,15 @@ def scan_host(host, option, return_array:list=None):
     results_as_dicts:list[dict] = []
     
     log(f'Starting "{option}" Scan at {get_timestamp()}', '!')
+    
+    # if its a ping scan no need to calculate ports
     if option == 'ping':
         # simply ping the host
         if check_host_available(host.ip):
             if return_array != None:
+                # if running threaded return it per array
                 return_array.append(f'{host.ip} is online')
+                
             return f'{host.ip} is online'
         else:
             return f'{host.ip} is not online'
@@ -261,10 +286,8 @@ def scan_host(host, option, return_array:list=None):
         # (return / parameter)
         if return_array != None:
                 return_array.append(result)
-        else:
-            results_as_dicts.append(result)
     
-    return results_as_dicts
+    return results
             
 
 def scan_hosts(hosts, option):

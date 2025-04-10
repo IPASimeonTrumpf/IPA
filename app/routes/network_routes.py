@@ -1,19 +1,30 @@
 from flask import Blueprint, render_template, request, jsonify
 
 from ..utils import validate
-from ..services.network_service import add_network, get_all_networks_formatted, get_network_by_id, scan_network
 
-network_blueprint:Blueprint = Blueprint('network', __name__, static_folder='static')
+from ..services.network_service import (
+    add_network, 
+    get_all_networks_formatted, 
+    get_network_by_id, 
+    scan_network
+)
+
+network_blueprint:Blueprint = Blueprint('network', 
+                                        __name__, 
+                                        static_folder='static'
+                                        )
 
 @network_blueprint.route('/')
 def index():
+    ''' returns the default page '''
     return render_template('index.html')
 
 @network_blueprint.route('/create_network', methods=['POST'])
 def serve_create_network():
+    ''' endpoint to create a network '''
+    # validation
     json_data = request.json['ip_with_cidr']
     ip_with_cidr = validate(json_data)
-    print(json_data)
     if not ip_with_cidr.__contains__('/'):
         return 'No / was supplied', 400
     # validation of IP-Adress
@@ -38,23 +49,28 @@ def serve_create_network():
         return 'CIDR is not between 23 and 33, therefore invalid', 400
     
     
-    
+    # creating the network
     response = add_network(ip_with_cidr)
-    
     if response == 'network has been created':
         return jsonify({'msg': response}), 201
     else:
+        # if there was an error return 400
         return response, 400
     
 @network_blueprint.route('/overview')
 def overview():
+    ''' display all created networks and hosts.
+    Hosts are here too since a host is considered a network with cidr 32.
+    '''
     networks = get_all_networks_formatted()
-    print(networks)
     return render_template('overview.html', networks=networks)
 
 
 @network_blueprint.route('/network/<id>')
 def serve_network(id):
+    ''' overview of a single network, displays scanoptions and all hosts 
+    inside the network
+    '''
     id_as_string = validate(str(id)) # validate User-Input
     try:
         network_id = int(id_as_string)
@@ -70,7 +86,6 @@ def serve_network(id):
 def serve_scan_network():
     input_network_id = request.json['network_id']
     input_option = request.json['option']
-    print(input_option)
     input_network_id_as_string = validate(input_network_id)
     option = validate(input_option)
     try:

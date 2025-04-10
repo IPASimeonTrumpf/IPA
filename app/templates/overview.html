@@ -17,7 +17,7 @@
         {% if network.size > 1%}
         <button class="network" onclick="redirect('/network/{{network.id}}')">Network {{network.ip}}</button>
         {% else %}
-            <button class="host" onclick="redirect('/host/{{network.id}}')">Host {{network.ip}}</button>
+            <button class="host" onclick="redirect('/host/{{network.hosts[0].id}}')">Host {{network.ip}}</button>
         {% endif %}
     </article>
     {% endif %}

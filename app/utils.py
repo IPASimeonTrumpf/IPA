@@ -6,11 +6,14 @@ from .configs import VERBOSE
 def get_timestamp():
     return datetime.now().replace(microsecond=0)
 
+# Used to create a log for relevant information
 def log(msg:str, status:str ='i'):
     if(not VERBOSE and status == 'i'):
         # informations only logged if verbose is on
         return
-    print(f'[{status}] {get_timestamp()} {msg}')
+    date = datetime.date(datetime.now())
+    with open(f'{date}_log_file.txt','w') as log_file:
+        log_file.write(f'[{status}] {get_timestamp()} {msg}')
 
 
 def validate(text: str):
@@ -20,5 +23,6 @@ def validate(text: str):
     output: str = text # make a local instance for changes
     for character in ('"<>|\\&(){}[];:' + "'"):
         if character in output:
-            output = output.replace(character, '\\' + character) # escape characters
+            # escape characters
+            output = output.replace(character, '\\' + character)
     return output

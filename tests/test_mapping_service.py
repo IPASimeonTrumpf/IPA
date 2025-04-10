@@ -11,7 +11,8 @@ from IPA.app.services.mapping_service import update_mapping_table
 def test_db():
     """Fixture für die Flask-Testumgebung"""
     flask_app = create_app()
-    flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # In-Memory-DB
+    # Create the Database only in Memory for tests
+    flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
 
     with flask_app.app_context():
         db.create_all()  # Neue Tabellen für jeden Test
@@ -30,4 +31,4 @@ def test_update_db_success(test_db):
     update_mapping_table()
     filled = Mapping.query.all()
     assert filled != []
-    assert len(filled) > 10000
+    assert len(filled) == 6227

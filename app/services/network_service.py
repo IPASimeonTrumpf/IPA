@@ -3,12 +3,21 @@ from threading import Thread
 
 from .scanner_service import scan_hosts
 
-from ..utils import log, get_timestamp
-from ..repositories.network_repository import create_network, get_network_by_id, get_all_networks
+from ..models.network import Network # used for types
+
 from ..repositories.host_repository import create_host
-from ..services.scanner_service import check_host_available
+from ..repositories.network_repository import (
+    create_network, 
+    get_network_by_id, 
+    get_all_networks, 
+    remove_network_by_id
+)
+
 from ..repositories.port__repository import create_port
-from ..models.network import Network
+
+from ..services.scanner_service import check_host_available
+
+from ..utils import log, get_timestamp
 
 
 def get_network_data(ip_and_subnet):
@@ -22,8 +31,6 @@ def get_network_data(ip_and_subnet):
     # All usable IP addresses in the network (excluding network and broadcast addresses)
     usable_ips = [str(ip) for ip in network.hosts()]
 
-    # If you want *all* IPs (including network and broadcast), use:
-    all_ips = [str(ip) for ip in network]
     return usable_ips, netmask
 
 
@@ -38,24 +45,41 @@ def add_network(ip_with_cidr:str):
         return 'Network could not be calculated, please verify your data'
     
     display_ip:str = ip_with_cidr.split('/')[0]
-    network_id:int = create_network(ip_address=display_ip, subnet_mask=subnet_mask).id
-    log(f'Added Network: {display_ip}')
+    created_network:Network = create_network(
+        ip_address=display_ip, 
+        subnet_mask=subnet_mask
+    )
+    network_id:int = created_network.id
+    log(f'Added Network: {display_ip}', '+')
+    
     threads:list[Thread] = []
     found_hosts:list[str] = []
+    
     for possible_host in possible_hosts:
+        # ping each host to check if they are online
         resp:bool = False
-        thread = Thread(target=check_host_available, args=(possible_host,found_hosts,))
+        thread = Thread(target=check_host_available, 
+                        args=(possible_host,found_hosts,)
+        )
+        
         threads.append(thread)
         thread.start()
-    print(len(found_hosts))
+        
     for thread in threads:
+        # wait for threads to finish
         thread.join()
     
-    
+    if len(found_hosts) == 0:
+        remove_network_by_id(network_id)
+        msg = 'No hosts have been found in the Network,'
+        msg += 'Network won\'t be created'
+        return msg
     
     for host in found_hosts:
-        log(f'Added host: {host} to network: {display_ip}', '+')
+        # add each found host to the network    
         create_host(ip_address=host, network_id=network_id)
+        log(f'Added host: {host} to network: {display_ip}', '+')
+    
     return 'network has been created'
 
 def scan_network(id, option):
@@ -72,32 +96,26 @@ def scan_network(id, option):
         return f'{len(results)} Hosts are online'
     
     for data in results:
-        create_port(port_number=data['port'],host_id=data['host'].id,service=data['service'],vulnerabilities=data['vulnerabilities'],
-                    found_date=get_timestamp())
+        create_port(
+            port_number=data['port'],
+            host_id=data['host'].id,
+            service=data['service'],
+            vulnerabilities=data['vulnerabilities'],
+            found_date=get_timestamp()
+        )
         long_vulnerability =len(data['vulnerabilities']) > 100
-        results_as_dicts.append({'port_number':data['port'],
-                                    'host_id':data['host'].id,
-                                    'service':data['service'],
-                                    'vulnerabilities':data['vulnerabilities'],
-                                    'vuln_long':long_vulnerability,
-                                    'found_date':get_timestamp()})
+        
+        results_as_dicts.append({
+            'port_number':data['port'],
+            'host_id':data['host'].id,
+            'service':data['service'],
+            'vulnerabilities':data['vulnerabilities'],
+            'vuln_long':long_vulnerability,
+            'found_date':get_timestamp()
+        })
+        
     return results_as_dicts
-    # format it to give a simple overview
-    if option == 'ping':
-        return f'There are {len(results)} hosts online'
-    else:
-        hosts:list[int] = []
-        ports:int = 0
-        for result in results:
-            create_port(port_number=result['port'], host_id=int(result['host'].id), 
-                    service=result['service'], 
-                    vulnerabilities=result['vulnerabilities'], 
-                    found_date=result['last_found'])
-            if result['host'].host_id not in hosts:
-                hosts.append(result.host_id)
-            ports += 1
-            
-        return f'found {ports} ports on {len(hosts)} hosts'
+
 
 def get_all_networks_formatted():
     ''' Returns all Networks in the form of dicts, instead of hosts returns
@@ -108,6 +126,12 @@ def get_all_networks_formatted():
     # convert the network objects to dicts for ease of use in jinja2
     network_dicts:list[dict] = []
     for network in networks:
-        network_dicts.append({'id': network.id, 'ip':network.ip, 
-                      'subnet':network.subnet, 'size': len(network.hosts)})
+        network_dicts.append({
+            'id': network.id, 
+            'ip':network.ip, 
+            'subnet':network.subnet, 
+            'size': len(network.hosts), 
+            'hosts':network.hosts
+        })
+        
     return network_dicts

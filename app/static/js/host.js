@@ -28,11 +28,8 @@ function scan(host_id, port_list) {
     })
     .then(data => {
         spinner.style.opacity = 0
-        if(option == 'ping') {
-            alert(data.msg)
-        } else {
-            alert(`Scan finished, found ${data.data.length} open ports`)
-        }
+        
+        alert(data.msg)
         
     })
 

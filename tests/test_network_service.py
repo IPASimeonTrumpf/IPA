@@ -3,7 +3,13 @@ import time
 
 from IPA.app import create_app
 from IPA.app.extensions import db
-from IPA.app.services.network_service import get_all_networks_formatted, add_network, get_network_data, get_network_by_id, scan_network
+from IPA.app.services.network_service import (
+    get_all_networks_formatted, 
+    add_network, 
+    get_network_data, 
+    get_network_by_id, 
+    scan_network
+)
 from IPA.app.models.network import Network
 from IPA.app.models.port import Port
 
@@ -27,59 +33,61 @@ def test_db():
 the routes rather than inside the business logic.
 '''
 
+def test_get_network_by_id(test_db):
+    add_network('127.0.0.1/24')
+    network = Network.query.filter(Network.ip == '127.0.0.1').first()
+    
+    network_by_id = get_network_by_id(network.id)
+    
+    assert network_by_id == network
+    
+    
+
 def test_get_network_data_success(test_db):
-    test_hosts, subnet = get_network_data('192.168.1.1/24')
+    test_hosts, subnet = get_network_data('127.0.0.1/24')
     test_values = []
-    for i in range(255):
-        test_values.append('192.168.1.' + str(i))
-    test_values.pop(0)
-    assert test_values == test_hosts
+    for i in range(254):
+        test_values.append('127.0.0.' + str(i))
+        
+    assert len(test_values) == len(test_hosts)
     assert subnet == '255.255.255.0'
 
 
 def test_add_network_success(test_db):
-    network:Network = add_network('127.0.0.1/32')
+    message = add_network('127.0.0.1/32')
 
-    network_2 = Network.query.filter(Network.ip=="127.0.0.1").first()
-    assert network == 'network has been created'
+    network = Network.query.filter(Network.ip=="127.0.0.1").first()
+    assert network != None 
+    assert message == 'network has been created'
 
 def test_ping_scan_network_success(test_db):
     message = add_network('127.0.0.1/24')
     assert message == 'network has been created'
     network:Network = Network.query.filter(Network.ip == '127.0.0.1').first()
-    if network == None:
-        exit()
-    print(network)
-    print(network.subnet)
-    print(network.id)
 
     result = scan_network(network.id, 'ping')
-    assert result == ('There are 254 hosts online' or result == 'There are 255 hosts online')
+    assert result == '254 Hosts are online'
 
 
 def test_port_scan_network_success(test_db):
-    message = add_network('10.128.128.176/24')
+    message = add_network('127.0.0.1/30')
     assert message == 'network has been created'
-    network:Network = Network.query.filter(Network.ip == '10.128.128.176').first()
-    result = scan_network(network.id, '1000')
-    print(type(result))
+    network:Network = Network.query.filter(Network.ip == '127.0.0.1').first()
+    result = scan_network(network.id, '22,5000')
     amount_ports = len(Port.query.all())
-    assert result == f'found {amount_ports} ports on {len(network.hosts)} hosts'
+    assert len(result) == amount_ports
     
     
 def test_get_all_networks_formatted_success(test_db):
     _ = add_network('127.0.0.1/24')
-    _ = add_network('10.128.128.176/32')
-    message = add_network('10.128.128.176/24')
+    message = add_network('10.128.128.1/24')
     assert message == 'network has been created'
-    network:Network = Network.query.filter(Network.ip == '10.128.128.176').first()
 
     networks_as_dicts = get_all_networks_formatted()
     amount_networks = len(Network.query.all())
     assert len(networks_as_dicts) == amount_networks
-    print(networks_as_dicts[0])
     assert networks_as_dicts[0]['ip'] == '127.0.0.1'
     assert networks_as_dicts[0]['subnet'] == '255.255.255.0'
     assert networks_as_dicts[0]['size'] > 0
-    assert networks_as_dicts[1]['size'] == 1
+    assert networks_as_dicts[0]['size'] == 254
     

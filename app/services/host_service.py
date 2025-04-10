@@ -1,5 +1,3 @@
-import ipaddress
-
 from .scanner_service import scan_host
 
 from ..utils import log
@@ -28,20 +26,23 @@ def scan_host_by_id(id, option):
     target_host:Host = get_host_by_id(id)
     return_array = []
     response = scan_host(host=target_host, option=option)
-    print('return array')
-    print(return_array)
-    print(response)
     if option == 'ping':
         return response # simply return the response
     else:
         for port_object in response:
-            create_port(port_number=port_object['port'], host_id=int(port_object['host'].id), 
-                    service=port_object['service'], 
-                    vulnerabilities=port_object['vulnerabilities'], 
-                    found_date=port_object['last_found'])
+            create_port(
+                port_number=port_object['port'], 
+                host_id=int(port_object['host'].id), 
+                service=port_object['service'], 
+                vulnerabilities=port_object['vulnerabilities'], 
+                found_date=port_object['last_found']
+            )
+            
             ports += 1
-            log(f'port {port_object["port"]} has been added to host: {target_host.ip}', 
-                '+')
+            
+            log(f'port {port_object["port"]} has been added to host: ' + 
+                target_host.ip, '+'
+            )
     return f'Scan finished, scanned {ports} open ports'
 
 def get_ports_by_host_id(id):
@@ -49,7 +50,10 @@ def get_ports_by_host_id(id):
     port_dicts: list[dict] = []
     host:Host = get_host_by_id(id)
     for port in host.ports:
-        port_dicts.append({'port_number':port.port, 'service': port.service, 
-                           'vulnerabilities':port.vulnerabilities, 
-                           'scan_date':port.last_found})
+        port_dicts.append({
+            'port_number':port.port, 
+            'service': port.service, 
+            'vulnerabilities':port.vulnerabilities,                
+            'scan_date':port.last_found
+        })
     return port_dicts
