@@ -13,7 +13,7 @@ def log(msg: str, status: str = "i"):
         # informations only logged if verbose is on
         return
     date = datetime.date(datetime.now())
-    with open(f"{date}_log_file.txt", "w") as log_file:
+    with open(f"{date}_log_file.txt", "a") as log_file:
         log_file.write(f"[{status}] {get_timestamp()} {msg}")
 
 

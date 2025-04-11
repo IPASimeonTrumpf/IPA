@@ -12,3 +12,4 @@ __pycache__/
 **/__pycache__/
 __pychache__
 /app/__pycache__/*
+*_log_file.txt

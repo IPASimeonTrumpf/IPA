@@ -31,7 +31,13 @@
                     <tr>
                         <td>{{ port.port }}</td>
                         <td>{{ host.ip }}</td>
-                        <td>{{ port.service }}</td>
+                        <td>
+                            {% if port.service|length > 100 %}
+                                Too long to display
+                            {% else %}
+                                {{ port.service }}
+                            {% endif %}
+                        </td>
                         <td>
                             {% if port.vulnerabilities|length > 100 %}
                                 Too long to display

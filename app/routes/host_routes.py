@@ -3,8 +3,6 @@ from flask import Blueprint, render_template, request, jsonify
 from ..utils import validate, get_timestamp
 from ..services.host_service import get_host_by_id, scan_host_by_id
 
-from ..repositories.port__repository import create_port
-
 host_blueprint: Blueprint = Blueprint("host", __name__, static_folder="static")
 
 

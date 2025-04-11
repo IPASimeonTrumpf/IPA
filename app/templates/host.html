@@ -6,7 +6,7 @@
 {% block body %}
     <div class="center">
         {% if host.ip != host.network.ip %}
-            <h1>Host: {{ host.ip }} (From Network Network :{{ host.network.ip }})</h1>
+            <h1>Host: {{ host.ip }} (From Network :{{ host.network.ip }})</h1>
         {% else %}
             <h1>Host: {{ host.ip }}</h1>
         {% endif %}

@@ -92,7 +92,7 @@ body {
     animation: spin 1s linear infinite;
     margin: auto;
   }
-  .loader {
+    .loader {
     border: 6px solid #f3f3f3;       /* Hintergrundring */
     border-top: 6px solid #3498db;   /* Farbe des drehenden Teils */
     border-radius: 50%;
@@ -105,7 +105,6 @@ body {
   p {
     opacity: 0;
   }
-  
   
   @keyframes spin {
     0% { transform: rotate(0deg); }
