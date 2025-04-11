@@ -50,7 +50,6 @@ body {
   
   /* Host-Button-Stil (orange wie im Bild) */
   button.host {
-    background-color: #ffa500;
     color: white;
     font-weight: bold;
     padding: 10px 16px;
